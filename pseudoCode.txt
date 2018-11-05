@@ -1,0 +1,119 @@
+
+setup Agent Consommateur
+	int idC
+	float ro #rayon d'opération
+	float activityLevel (random)
+	liste[ratings] 
+
+setup Agent Fournisseur
+	int idF
+	float ro #rayon d'opération
+
+
+Rating
+	list[a,b,i,c,v]
+	float reliability rating
+
+def calcul Ti(a,b,c):
+	lambda=-5/ln(0.5)
+	somme=0
+	weightSum=0
+	foreach r dans R(a,b,c):
+		weight=(exp(-1*this.tick-r[i])/lambda)
+		weightSum+=weight
+		somme+=weight*r[v]
+
+	return somme/weightSum
+
+
+def calcul reliability(Ti(a,b,c)):
+	n= size(R(a,b,c))
+	m=seuil
+	pn=1
+	if(n<=m):
+		pn=n/m
+
+
+	pd=0
+	lambda=-5/ln(0.5)
+	weightSum=0
+	somme=0
+	foreach r dans R(a,b,c):
+		weight=(exp(-1*this.tick-r[i])/lambda)
+		weightSum+=weight
+		pd+= weight * abs (r[v] - Ti(a,b,c))
+		somme+=weight*r[v]
+	
+	pd = 1 - pd/(2*weightSum)
+
+	return pn*pd
+
+
+def deleteOldRatings:
+	foreach r in list[ratings]:
+		if(r[i]>H):
+			supprimer r de la list[ratings]
+
+
+def searchProvider:
+	if modele == NoTrust:
+		return chooserandomly()
+	if modele == FIRE:
+		if( R(a,b,c) != vide ):
+			return max b (R(a,b,c))
+		else :
+			return chooseRandomly()
+
+!Choose randomly différent ?? On reste dans le ro ou pas ?
+
+def go :
+
+	foreach agentC:
+		if random < activityLevel:
+			provider=searchProvider
+			interact(provider)
+
+	foreach agentF:
+		answer
+
+	
+	foreach agentF:
+		switchBehaviour
+
+	foreach agentC:
+		randomMove
+
+	randomSetup
+
+#random amount of agent entering and quiting the world
+def randomSetup:
+	pCPC=5%
+	pPPC=2%
+	#HYPOTHESE : autant de chances de rentrer que de sortir
+	nE=random (0,PCPC/2)
+	add nE agentsC
+	nS= random (PCPC/2,PCPC)
+	delete nS agentsC
+
+	nE=random (0,pPPC/2)
+	add nE agentsF
+	nS= random (pPPC/2,pPPC)
+	delete nS agentsF
+
+def randomMove:
+	intervalle=pi/20
+	randomPhi= random (-intervalle, intervalle)
+	randomTeta=random (-intervalle, intervalle)
+	pCLC = 0.10
+	pPLC = 0.10
+
+def switchBehaviour:
+	probaMuc=0.1
+	M=1
+	pProfileSwitch : 0.02
+	if random< probaMuC:
+		deltaMu=random(-M,M)
+		newPerformance=oldPerformance + deltaMu
+
+	if random < pProfileSwitch:
+		newProfile
