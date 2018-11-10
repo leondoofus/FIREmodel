@@ -4,7 +4,6 @@ Rate
 	consumer
 	provider
 	interactionNb 		#from 0 to n
-	#termC inutile
 	valueV
 	reliability rating
 
@@ -15,7 +14,8 @@ ConsumerAgent
 	liste[ratings]  #<- liste de Rate
 	nbOfInteraction=0
 	trustModel model;
-	Ug = list()
+	hasTrustValue=list()
+	noTrustValue=list()
 
 ProviderAgent
 	idF
@@ -25,6 +25,7 @@ ProviderAgent
 	receivedRatings=list() #<- liste de float
 
 enum providerType{
+
 	good ([PL_GOOD, PL_PERFECT], 1.0)
 	ordinary ([PL_OK, PL_GOOD], 2.0),
 	bad ([PL_WORST, PL_OK], 2.0),
@@ -33,6 +34,8 @@ enum providerType{
 }
 
 def getPerformanceLevel(provider):
+	if(provider.pType==intermittent):
+		return random(PL_BAD , PL_GOOD) # A refaire à chaque fois, pour que ce soit instable
 	return random(provider.pType.intervalle); #Supposition que c'est un random (voir Table2 p.139)
 
 
@@ -83,7 +86,7 @@ UGs_NoTModel=list()
 
 
 # <------------- FUNCTIONS ------------->
-def getTi(a,b,c):
+def getTI(a,b,c=None):
 	lambda=-5/ln(0.5)
 	somme=0
 	weightSum=0
@@ -114,8 +117,7 @@ def getReliability(Ti(a,b,c)):
 def deleteOldRatings:
 	#ne conserver que les H derniers ratings 
 
-hasTrustValue=list()
-noTrustValue=list()
+
 
 def searchProvider:
 	if modele == NoTrust:
@@ -138,11 +140,7 @@ def searchProvider:
 
 		
 		bestP= selectBestProvider()
-		ER_a1=-2
-
-		foreach v in R(self,bestP):
-			if v>ER_a1:
-				ER_a1<-v
+		ER_a1=getTI(self,bestP)
 
 		averageUG=0
 		foreach provider p:
@@ -161,33 +159,38 @@ def searchProvider:
 			return selectRandomProvider()
 
 def selectBestProvider():
-## TODO : getTi & reliability etc 
+## TODO : getTI & reliability etc 
 	bestV=-1000
 	bestP=None
-	foreach r in self.ratings:
-		if r[v] > bestV:
-			bestP <- r[b]
+	foreach p in hasTrustValue:
+		trustValue=getTI(self,p)
+		if( trustValue> bestV):
+			bestV <- trustValue
+			bestP<-p
+
+
 
 	return bestP
 
 
 def interactWith(AgentF provider):
-	#rate=getTi(this,provider,c);
-	performance=np.random.normal(mean,deviation)
-	#reliabilty= getReliability(rate);
-	storeRating(performance);
+	
+	uG=np.random.normal(mean,deviation)
+	if(self.modele==FIRE):
+		UGs_fire <- uG
+	else:
+		UGs_NoTModel <- uG
+	ratingValue=uG/10 ## A Vérifier
+	storeRating(ratingValue);
 
 	nbOfInteraction+=1
 
 
 # store the performance in the local database and share with the provider 
-def storeRating (provider,uG):
-	self.ratings <- (new Rate (self,provider, self.nbOfInteraction-1,uG))
-	provider.receivedRatings <- uG
-	if(self.modele==FIRE):
-		UGs_fire <- uG
-	else:
-		UGs_NoTModel <- uG
+def storeRating (provider,v):
+	self.ratings <- (new Rate (self,provider, self.nbOfInteraction-1,v))
+	provider.receivedRatings <- v
+	
 
 
 
@@ -232,7 +235,6 @@ def go :
 		if random < activityLevel:
 			provider=searchProvider
 			interactWith(provider)
-
 
 	foreach agentF:
 		switchBehaviour
