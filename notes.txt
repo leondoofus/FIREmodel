@@ -1,0 +1,7 @@
+NOTES !
+
+
+#  In addition, if a consumer agent is situated 
+# outside of the provider’s normal operational range (->ro) 
+# the service quality of that provider is also degraded linearly
+# in proportion to the distance between the provider and the consumer.

@@ -1,23 +1,39 @@
-setup Agent Consommateur
-	int idC
-	float ro #rayon d'opération
-	float activityLevel (random)
-	liste[ratings] 
-	int nbOfInteraction=0
-	trustModel model;
-	list[Ug]
+# <------------- Les structures ------------->
 
-setup Agent Fournisseur
-	int idF
-	float ro #rayon d'opération
+Rate
+	consumer
+	provider
+	interactionNb 		#from 0 to n
+	#termC inutile
+	valueV
+	reliability rating
+
+ConsumerAgent
+	idC
+	ro #rayon d'opération
+	activityLevel #<- random
+	liste[ratings]  #<- liste de Rate
+	nbOfInteraction=0
+	trustModel model;
+	Ug = list()
+
+ProviderAgent
+	idF
+	ro #rayon d'opération
 	providerType pType
+	performanceLevel #μP
+	receivedRatings=list() #<- liste de float
 
 enum providerType{
 	good ([PL_GOOD, PL_PERFECT], 1.0)
 	ordinary ([PL_OK, PL_GOOD], 2.0),
 	bad ([PL_WORST, PL_OK], 2.0),
 	intermittent (None, None) #Random perf in range [PL_BAD, PL_GOOD]
+
 }
+
+def getPerformanceLevel(provider):
+	return random(provider.pType.intervalle); #Supposition que c'est un random (voir Table2 p.139)
 
 
 enum trustModel{
@@ -27,60 +43,46 @@ enum trustModel{
 	ITCRWR
 }
 
-##Pas forcémenet utile
-interaction{
-	consumer
-	provider
-	Ug
 
-}
-#Static simulation variables
-int roundsNb= 500
-int goodPNb = 10
-int ordinaryPNb=40
-int intermittentPNb = 5
-int badPNb= 45
+# <------------- Variables statiques ------------->
+
+#Static experimental variables
+roundsNb= 500
+goodPNb = 10
+ordinaryPNb=40
+intermittentPNb = 5
+badPNb= 45
  
-int Nc=500
-rangeActivityLevel = [0.25,1.00]
+Nc=500	#Nb of consumer agents in each group
+rangeActivityLevel = [0.25,1.00] #alpha
 
 #Static Parameters
-int H = 10
-int lambdaIT = -(5/ln(0.5))
-int nBF= 2
-int nRL=5
+H = 10
+lambdaIT = -(5/ln(0.5))
+nBF= 2
+nRL=5
 #Componeent Coeffictient
-float wI = 2
-float wR=2
-float wW = 1
-float wC = 0.5
+wI = 2
+wR=2
+wW = 1
+wC = 0.5
 #Reliability function parameters
-float gammaI = -ln(0.5)
-float gammaR = -ln(0.5)
-float gammaW = -ln(0.5)
-float gammaC = -ln(0.5)
+gammaI = gammaR =gammaW= gammaC= -ln(0.5)
 
 #static performanceLevel-utility
-int PL_PERFECT=10
-int PL_GOOD=5
-int PL_OK=0
-int PL_BAD=-5
-int PL_WORST=-10
+PL_PERFECT=10
+PL_GOOD=5
+PL_OK=0
+PL_BAD=-5
+PL_WORST=-10
 
 
-#  In addition, if a consumer agent is situated 
-# outside of the provider’s normal operational range (->ro) 
-# the service quality of that provider is also degraded linearly
-# in proportion to the distance between the provider and the consumer.
+# <------------- GLOBALS ------------->
+UGs_fire=list()
+UGs_NoTModel=list()
 
-Rate
-	int consumer
-	int provider
-	int interactionNb
-	int termC
-	int valueV
-	float reliability rating
 
+# <------------- FUNCTIONS ------------->
 def getTi(a,b,c):
 	lambda=-5/ln(0.5)
 	somme=0
@@ -110,62 +112,97 @@ def getReliability(Ti(a,b,c)):
 
 
 def deleteOldRatings:
-	foreach r in list[ratings]:
-		if(r[i]>H):
-			supprimer r de la list[ratings]
+	#ne conserver que les H derniers ratings 
 
+hasTrustValue=list()
+noTrustValue=list()
 
 def searchProvider:
 	if modele == NoTrust:
-		return chooserandomly()
+		return selectRandomProvider()
 	if modele == FIRE:
-		if( R(a,b,c) != vide ):
-			return max b (R(a,b,c))
-		else :
-			return chooseRandomly()
+		foreach providers p:
+			if (getRatingFor(p) == empty):
+				noTrustValue <- p
+			else
+				hasTrustValue <- p
+
+		
+
+		
+		if(hasTrustValue==empty):
+			return selectRandomProvider()
+		if(noTrustValue==empty):
+			return selectBestProvider()
+
+
+		
+		bestP= selectBestProvider()
+		ER_a1=-2
+
+		foreach v in R(self,bestP):
+			if v>ER_a1:
+				ER_a1<-v
+
+		averageUG=0
+		foreach provider p:
+			averageUG+=p.pType.moyenne
+		averageUG /= totalPNb
+		ER_a2 = averageUG
+		#a2 selectRandomProvider
+		#a1 selectBestProvider
+		T=100
+		T-=1
+		pA1=(exp(ER_a1/T))/((exp(ER_a1/T))+(exp(ER_a2/T)))
+
+		if (random (0,1 )< pA1):
+			return bestP
+		else:
+			return selectRandomProvider()
+
+def selectBestProvider():
+## TODO : getTi & reliability etc 
+	bestV=-1000
+	bestP=None
+	foreach r in self.ratings:
+		if r[v] > bestV:
+			bestP <- r[b]
+
+	return bestP
+
 
 def interactWith(AgentF provider):
 	#rate=getTi(this,provider,c);
 	performance=np.random.normal(mean,deviation)
 	#reliabilty= getReliability(rate);
-	storeRating(rate, reliabilty);
+	storeRating(performance);
+
+	nbOfInteraction+=1
 
 
-!Choose randomly différent ?? On reste dans le ro ou pas ?
+# store the performance in the local database and share with the provider 
+def storeRating (provider,uG):
+	self.ratings <- (new Rate (self,provider, self.nbOfInteraction-1,uG))
+	provider.receivedRatings <- uG
+	if(self.modele==FIRE):
+		UGs_fire <- uG
+	else:
+		UGs_NoTModel <- uG
 
-def go :
 
-	foreach agentC:
-		if random < activityLevel:
-			provider=searchProvider
-			interactWith(provider)
-
-	foreach agentF:
-		answer
-
-	
-	foreach agentF:
-		switchBehaviour
-
-	foreach agentC:
-		randomMove
-
-	randomSetup
 
 #random amount of agent entering and quiting the world
 def randomSetup:
 	pCPC=5%
 	pPPC=2%
-	#HYPOTHESE : autant de chances de rentrer que de sortir
-	nE=random (0,PCPC/2)
-	add nE agentsC
-	nS= random (PCPC/2,PCPC)
-	delete nS agentsC
+	#Nb d'agents maintenu constant.
+	n=random (0,PCPC*populationC) #<- ENTIER
+	add n agentsC
+	delete n agentsC
 
-	nE=random (0,pPPC/2)
-	add nE agentsF
-	nS= random (pPPC/2,pPPC)
-	delete nS agentsF
+	n=random (0,pPPC*populationF)
+	add n agentsF
+	delete n agentsF
 
 def randomMove:
 	intervalle=pi/20
@@ -173,6 +210,9 @@ def randomMove:
 	randomTeta=random (-intervalle, intervalle)
 	pCLC = 0.10
 	pPLC = 0.10
+	newPosition=
+	if(random(0,1)<0.1):
+		agent.moveTo(newPosition)
 
 def switchBehaviour:
 	probaMuc=0.1
@@ -184,3 +224,20 @@ def switchBehaviour:
 
 	if random < pProfileSwitch:
 		newProfile
+
+# <------------- Main loop ------------->
+def go :
+
+	foreach agentC:
+		if random < activityLevel:
+			provider=searchProvider
+			interactWith(provider)
+
+
+	foreach agentF:
+		switchBehaviour
+
+	foreach agentC:
+		randomMove
+
+	randomSetup
