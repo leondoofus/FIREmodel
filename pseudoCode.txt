@@ -1,20 +1,87 @@
-
 setup Agent Consommateur
 	int idC
 	float ro #rayon d'opération
 	float activityLevel (random)
 	liste[ratings] 
+	int nbOfInteraction=0
+	trustModel model;
+	list[Ug]
 
 setup Agent Fournisseur
 	int idF
 	float ro #rayon d'opération
+	providerType pType
+
+enum providerType{
+	good ([PL_GOOD, PL_PERFECT], 1.0)
+	ordinary ([PL_OK, PL_GOOD], 2.0),
+	bad ([PL_WORST, PL_OK], 2.0),
+	intermittent (None, None) #Random perf in range [PL_BAD, PL_GOOD]
+}
 
 
-Rating
-	list[a,b,i,c,v]
+enum trustModel{
+	NoTrust,
+	IT,
+	ITCR,
+	ITCRWR
+}
+
+##Pas forcémenet utile
+interaction{
+	consumer
+	provider
+	Ug
+
+}
+#Static simulation variables
+int roundsNb= 500
+int goodPNb = 10
+int ordinaryPNb=40
+int intermittentPNb = 5
+int badPNb= 45
+ 
+int Nc=500
+rangeActivityLevel = [0.25,1.00]
+
+#Static Parameters
+int H = 10
+int lambdaIT = -(5/ln(0.5))
+int nBF= 2
+int nRL=5
+#Componeent Coeffictient
+float wI = 2
+float wR=2
+float wW = 1
+float wC = 0.5
+#Reliability function parameters
+float gammaI = -ln(0.5)
+float gammaR = -ln(0.5)
+float gammaW = -ln(0.5)
+float gammaC = -ln(0.5)
+
+#static performanceLevel-utility
+int PL_PERFECT=10
+int PL_GOOD=5
+int PL_OK=0
+int PL_BAD=-5
+int PL_WORST=-10
+
+
+#  In addition, if a consumer agent is situated 
+# outside of the provider’s normal operational range (->ro) 
+# the service quality of that provider is also degraded linearly
+# in proportion to the distance between the provider and the consumer.
+
+Rate
+	int consumer
+	int provider
+	int interactionNb
+	int termC
+	int valueV
 	float reliability rating
 
-def calcul Ti(a,b,c):
+def getTi(a,b,c):
 	lambda=-5/ln(0.5)
 	somme=0
 	weightSum=0
@@ -26,27 +93,20 @@ def calcul Ti(a,b,c):
 	return somme/weightSum
 
 
-def calcul reliability(Ti(a,b,c)):
-	n= size(R(a,b,c))
-	m=seuil
-	pn=1
-	if(n<=m):
-		pn=n/m
-
-
-	pd=0
+def getReliability(Ti(a,b,c)):
+	gamma ??
+	
+	pD=0
 	lambda=-5/ln(0.5)
 	weightSum=0
-	somme=0
 	foreach r dans R(a,b,c):
 		weight=(exp(-1*this.tick-r[i])/lambda)
 		weightSum+=weight
-		pd+= weight * abs (r[v] - Ti(a,b,c))
-		somme+=weight*r[v]
+		pD+= weight * abs (r[v] - Ti(a,b,c))
 	
-	pd = 1 - pd/(2*weightSum)
-
-	return pn*pd
+	pD = 1 - pD/(2*weightSum)
+	pR=1-exp(-1*gamma*weightSum)
+	return pR*pD
 
 
 def deleteOldRatings:
@@ -64,6 +124,13 @@ def searchProvider:
 		else :
 			return chooseRandomly()
 
+def interactWith(AgentF provider):
+	#rate=getTi(this,provider,c);
+	performance=np.random.normal(mean,deviation)
+	#reliabilty= getReliability(rate);
+	storeRating(rate, reliabilty);
+
+
 !Choose randomly différent ?? On reste dans le ro ou pas ?
 
 def go :
@@ -71,7 +138,7 @@ def go :
 	foreach agentC:
 		if random < activityLevel:
 			provider=searchProvider
-			interact(provider)
+			interactWith(provider)
 
 	foreach agentF:
 		answer
