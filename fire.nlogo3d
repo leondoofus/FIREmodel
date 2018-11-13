@@ -32,6 +32,11 @@ to-report vary [ #min #max ]  ; random float in given range
   report #min + random-float (#max - #min)
 end
 
+to-report great-distance [x1 y1 z1 x2 y2 z2]
+  let dotproduct (x1 * x2 + y2 * y2 + z1 * z2)/(shape-size ^ 2)
+  report acos(dotproduct) * shape-size
+end
+
 to go
   random-move
   tick
