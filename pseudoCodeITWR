@@ -35,7 +35,8 @@ enum providerType{
 
 enum trustModel{
 	NoTrust,
-	IT
+	IT,
+	ITWR
 }
 
 enum Component{
@@ -43,7 +44,6 @@ enum Component{
 	WR,
 	CR
 }
-
 
 # <------------- Variables statiques ------------->
 
@@ -102,16 +102,23 @@ function setPerformanceLevel(provider):
 
 
 #Trust value returned for provider b
-function getTI(a,b):
-	lambda=-5/ln(0.5)
-	somme=0
-	weightSum=0
-	foreach r dans R(a,b,c):
-		weight=(exp(-1*this.tick-r[i])/lambda)
-		weightSum+=weight
-		somme+=weight*r[v]
+#k is the component for which we want the trust value
+function getT(k,a,b):
+	if(k==Component.IT or k==Component.WR){
+		RList <- RW(a,b,c)
+		if(k==Component.IT):
+			RList <- RI(a,b,c)
+		somme=0
+		weightSum=0
+		foreach r dans R(a,b,c):
+			weight=(exp(-1*this.tick-r[i])/lambdaIT)
+			weightSum+=weight
+			somme+=weight*r[v]
 
-	return somme/weightSum
+		return somme/weightSum		
+	}
+	
+	
 
 #Reliability for trust value
 function getReliability(a,b,TI):
@@ -147,7 +154,7 @@ function searchProvider:
 		return selectRandomProvider()
 
 
-	if modele == IT:
+	if modele == FIRE:
 		#Separate known and unknown providers
 		foreach providers p:
 			if (getRatingFor(p) == empty):
@@ -233,7 +240,19 @@ function interactWith(AgentF provider):
 function storeRating (provider,v):
 	self.ratings <- (new Rate (self,provider, interactionRounds,v))
 	provider.receivedRatings <- v
-	
+
+
+function evaluationProcessWR:
+	chain=0
+	do :
+	for each nBF acquaintances:
+		chain++
+		result=sendRequest(b,c)
+		if(result != empty):
+			results<- result
+		else
+			acquaintances<-send nBF newAcquaintances
+	while (result<nBF and chain<nRL)
 
 
 
@@ -270,6 +289,8 @@ function switchBehaviour:
 
 	if random < pProfileSwitch:
 		newProfile
+
+
 
 # <------------- Initialisation ------------->
 function setup:
@@ -319,6 +340,6 @@ function go :
 
 	randomSetup
 	interactionRounds ++ ##Ticks ++
-
+	
 	if(interactionRounds>roundsNb):
 		STOP
