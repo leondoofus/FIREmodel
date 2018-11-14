@@ -203,16 +203,45 @@ to random-move ;for everyone
   ]
 end
 
+to-report select-random-provider [x y z r]
+  let provs []
+  ask providers
+  [
+   if great-distance x y z x-pos y-pos z-pos < r
+    [set provs lput who provs]
+  ]
+  report one-of provs
+end
+
 to go
   ask consummers
-  [
-    let x1 x-pos
-    let y1 y-pos
-    let z1 z-pos
-    if random-float 1.0 < activity-level
-    [;; search a provider and interact here]
+  [let x1 x-pos
+   let y1 y-pos
+   let z1 z-pos
+   let r1 radius
+   let prov who
+   if random-float 1.0 < activity-level
+     [if Model = "NoTrust"
+       [set prov select-random-provider x1 y1 z1 r1]
+       if Model = "Fire"
+       [ask providers
+          [
+            ;; il y a un if else ici que je ne comprends pas
+          ]
+          if empty? has-trust-value
+          [set prov select-random-provider x1 y1 z1 r1]
+          if empty? no-trust-value
+          [;;select best provider
+          ]
+
+
+       ]
+     ]
+    if prov != who
+    [
+      ;;interact
     ]
-  ]
+   ]
   random-move
   tick
 end
@@ -289,7 +318,7 @@ initial-number-consummers
 initial-number-consummers
 0
 500
-0.0
+11.0
 1
 1
 NIL
@@ -309,6 +338,16 @@ initial-number-providers
 1
 NIL
 HORIZONTAL
+
+CHOOSER
+52
+182
+190
+227
+Model
+Model
+"NoTrust" "FIRE"
+0
 
 @#$#@#$#@
 ## WHAT IS IT?
