@@ -1,20 +1,88 @@
-globals [shape-size]
+globals [
+  shape-size ;; sphere's radius
+  rounds-number
+  goodP-number
+  ordinaryP-number
+  intermittentP-number
+  badP-number
+  ;;Nc=500?
+  ;;rangeActivityLevel?
+  H
+  lambaIT
+  nBF
+  nRL
+  wI wR wW wC
+  gammaI gammaR gammaW gammaC
+  PL-PERFECT PL-GOOD PL-OK PL-BAD PL-WORST
+  DEGRADATION
+  UGs-fire
+  UGs-NoTModel
+  ;;interactionRounds
+  T
+  provider-type
+  trust-model
+  component
+]
+breed [consummers consummer]
+breed [providers provider]
+
 turtles-own [
-  x-pos  ;; x-pos, y-pos, and z-pos are the cartesian coordinates
-  y-pos  ;; don't confuse them with xcor and ycor, which are predefined
-  z-pos  ;;   NetLogo variables for turtles
-  colour ;; agent's color
+  x-pos
+  y-pos
+  z-pos
   radius ;; radius of operation
-  ;;p      ;; p, theta, and phi are the spherical coordinates
-  ;;theta
-  ;;phi
- ]
+  agent-type
+  ;; Consummers' propeties
+  idC ;; Consummer ID
+	activity-level
+	ratings ;; list
+	t-model
+	has-trust-value ;;list
+	no-trust-value ;; list
+  ;; Providers' propeties
+  idP
+  p-type
+  performance-level
+  received-ratings ;;list
+]
 
 to setup
   clear-all
-  ;;set-default-shape turtles "circle"
+  ;;setup all statics variables
   set shape-size 1000.0
-  create-turtles 1000 ;;num-turtles à définir
+  set rounds-number 500
+  set goodP-number 10
+  set ordinaryP-number 40
+  set intermittentP-number 5
+  set badP-number 45
+  set H 10
+  set lambaIT -5 / ln(0.5)
+  set nBF 2
+  set nRL 5
+  set wI 2
+  set wR 2
+  set wW 1
+  set wC 0.5
+  set gammaI -1 * ln(0.5)
+  set gammaR -1 * ln(0.5)
+  set gammaW -1 * ln(0.5)
+  set gammaC -1 * ln(0.5)
+  set PL-PERFECT 10
+  set PL-GOOD 5
+  set PL-OK 0
+  set PL-BAD -0.5
+  set PL-WORST -10
+  set DEGRADATION 1
+  set UGs-fire []
+  set UGs-NoTModel []
+  set T 100
+  set provider-type [] ;;;;;;;;;;; ????
+  set trust-model ["NoTrust" "IT" "ITWR"]
+  set component ["IT" "WR" "CR"]
+
+  let cptC 0
+  let cptP 0
+  create-consummers initial-number-consummers
   [
     set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
     set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
@@ -22,8 +90,85 @@ to setup
       [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
       [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
     setxyz x-pos y-pos z-pos
-    set colour one-of remove gray base-colors
-    set color colour
+    set radius shape-size * vary 0.1 0.2
+    set color violet
+    set agent-type "C"
+    set idC cptC
+    set cptC cptC + 1
+    set activity-level vary 0.25 1.00
+    set ratings []
+    set t-model "NT"
+    set has-trust-value []
+    set no-trust-value []
+    ;set shape circle
+  ]
+  create-providers initial-number-providers * goodP-number / 100
+  [
+    set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
+    set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
+    ifelse (random 2) = 0
+      [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+      [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+    setxyz x-pos y-pos z-pos
+    set radius shape-size * vary 0.1 0.2
+    set color green
+    ;set shape square
+    set idP cptP
+    set cptP cptP + 1
+    set p-type "good"
+    set performance-level vary PL-GOOD PL-PERFECT
+    set received-ratings []
+  ]
+  create-providers initial-number-providers * ordinaryP-number / 100
+  [
+    set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
+    set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
+    ifelse (random 2) = 0
+      [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+      [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+    setxyz x-pos y-pos z-pos
+    set radius shape-size * vary 0.1 0.2
+    set color yellow
+    ;set shape square
+    set idP cptP
+    set cptP cptP + 1
+    set p-type "ordinary"
+    set performance-level vary PL-OK PL-GOOD
+    set received-ratings []
+  ]
+  create-providers initial-number-providers * intermittentP-number / 100
+  [
+    set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
+    set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
+    ifelse (random 2) = 0
+      [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+      [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+    setxyz x-pos y-pos z-pos
+    set radius shape-size * vary 0.1 0.2
+    set color brown
+    ;set shape square
+    set idP cptP
+    set cptP cptP + 1
+    set p-type "intermittent"
+    set performance-level vary PL-BAD PL-GOOD
+    set received-ratings []
+  ]
+  create-providers initial-number-providers * badP-number / 100
+  [
+    set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
+    set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
+    ifelse (random 2) = 0
+      [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+      [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+    setxyz x-pos y-pos z-pos
+    set radius shape-size * vary 0.1 0.2
+    set color red
+    ;set shape square
+    set idP cptP
+    set cptP cptP + 1
+    set p-type "bad"
+    set performance-level vary PL-BAD PL-OK
+    set received-ratings []
   ]
   reset-ticks
 end
@@ -33,16 +178,21 @@ to-report vary [ #min #max ]  ; random float in given range
 end
 
 to-report great-distance [x1 y1 z1 x2 y2 z2]
-  let dotproduct (x1 * x2 + y2 * y2 + z1 * z2)/(shape-size ^ 2)
+  let dotproduct (x1 * x2 + y2 * y2 + z1 * z2)/(shape-size ^ 2) ; normalized
   report acos(dotproduct) * shape-size
 end
 
-to go
-  random-move
-  tick
+to get-T [k a b]
+  ;; where does the tables RW RI come from ?
 end
 
-to random-move
+to-report get-reliability [a b TI]
+
+  report 0
+end
+
+
+to random-move ;for everyone
   ask turtles [
     set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
     set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
@@ -51,6 +201,20 @@ to random-move
       [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
     setxyz x-pos y-pos z-pos
   ]
+end
+
+to go
+  ask consummers
+  [
+    let x1 x-pos
+    let y1 y-pos
+    let z1 z-pos
+    if random-float 1.0 < activity-level
+    [;; search a provider and interact here]
+    ]
+  ]
+  random-move
+  tick
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -83,9 +247,9 @@ ticks
 30.0
 
 BUTTON
-77
+294
 60
-150
+367
 93
 NIL
 setup\n
@@ -100,10 +264,10 @@ NIL
 1
 
 BUTTON
-90
-132
-153
-165
+297
+111
+360
+144
 NIL
 go\n
 T
@@ -115,6 +279,36 @@ NIL
 NIL
 NIL
 0
+
+SLIDER
+28
+61
+224
+94
+initial-number-consummers
+initial-number-consummers
+0
+500
+0.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+39
+118
+219
+151
+initial-number-providers
+initial-number-providers
+0
+500
+100.0
+100
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
