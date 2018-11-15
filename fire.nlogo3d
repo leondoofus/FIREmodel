@@ -5,7 +5,7 @@ globals [
   ordinaryP-number
   intermittentP-number
   badP-number
-  ;;Nc=500?
+  Nc
   ;;rangeActivityLevel?
   H
   lambaIT
@@ -22,6 +22,8 @@ globals [
   provider-type
   trust-model
   component
+  cptC ;; static id for C
+  cptP ;; static id for P
 ]
 breed [consummers consummer]
 breed [providers provider]
@@ -55,6 +57,7 @@ to setup
   set ordinaryP-number 40
   set intermittentP-number 5
   set badP-number 45
+  set Nc 500
   set H 10
   set lambaIT -5 / ln(0.5)
   set nBF 2
@@ -76,13 +79,13 @@ to setup
   set UGs-fire []
   set UGs-NoTModel []
   set T 100
-  set provider-type [] ;;;;;;;;;;; ????
+  set provider-type ["good" "bad" "itermittent" "ordinary"]
   set trust-model ["NoTrust" "IT" "ITWR"]
   set component ["IT" "WR" "CR"]
 
-  let cptC 0
-  let cptP 0
-  create-consummers initial-number-consummers
+  set cptC 0
+  set cptP 0
+  create-consummers Nc
   [
     set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
     set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
@@ -97,12 +100,32 @@ to setup
     set cptC cptC + 1
     set activity-level vary 0.25 1.00
     set ratings []
-    set t-model "NT"
+    set t-model "NoTrust"
     set has-trust-value []
     set no-trust-value []
     ;set shape circle
   ]
-  create-providers initial-number-providers * goodP-number / 100
+  create-consummers Nc
+  [
+    set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
+    set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
+    ifelse (random 2) = 0
+      [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+      [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+    setxyz x-pos y-pos z-pos
+    set radius shape-size * vary 0.1 0.2
+    set color violet
+    set agent-type "C"
+    set idC cptC
+    set cptC cptC + 1
+    set activity-level vary 0.25 1.00
+    set ratings []
+    set t-model "IT"
+    set has-trust-value []
+    set no-trust-value []
+    ;set shape circle
+  ]
+  create-providers goodP-number
   [
     set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
     set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
@@ -150,7 +173,7 @@ to setup
     set idP cptP
     set cptP cptP + 1
     set p-type "intermittent"
-    set performance-level vary PL-BAD PL-GOOD
+    set performance-level 0
     set received-ratings []
   ]
   create-providers initial-number-providers * badP-number / 100
@@ -167,7 +190,7 @@ to setup
     set idP cptP
     set cptP cptP + 1
     set p-type "bad"
-    set performance-level vary PL-BAD PL-OK
+    set performance-level vary PL-WORST PL-OK
     set received-ratings []
   ]
   reset-ticks
@@ -204,13 +227,13 @@ to random-move ;for everyone
 end
 
 to-report select-random-provider [x y z r]
-  let provs []
-  ask providers
-  [
-   if great-distance x y z x-pos y-pos z-pos < r
-    [set provs lput who provs]
-  ]
-  report one-of provs
+  ;let provs []
+  ;ask providers
+  ;[
+   ;if great-distance x y z x-pos y-pos z-pos < r
+    ;[set provs lput who provs]
+  ;]
+  report one-of providers
 end
 
 to go
@@ -318,7 +341,7 @@ initial-number-consummers
 initial-number-consummers
 0
 500
-11.0
+500.0
 1
 1
 NIL
