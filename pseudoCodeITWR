@@ -103,7 +103,7 @@ function setPerformanceLevel(provider):
 
 #Trust value returned for provider b
 #k is the component for which we want the trust value
-function getT(k,a,b):
+function getT(k,a,b): #list au lieu de passer a,b et k on verra
 	if(k==Component.IT or k==Component.WR){
 		RList <- RW(a,b,c)
 		if(k==Component.IT):
@@ -245,14 +245,30 @@ function storeRating (provider,v):
 function evaluationProcessWR:
 	chain=0
 	do :
-	for each nBF acquaintances:
-		chain++
-		result=sendRequest(b,c)
-		if(result != empty):
-			results<- result
-		else
-			acquaintances<-send nBF newAcquaintances
+		for each nBF acquaintances:
+			chain++
+			result=sendRequest(b,c)
+			if(result != empty):
+				results<- result
+			else
+				acquaintances<-send nBF newAcquaintances
 	while (result<nBF and chain<nRL)
+
+
+#Leon's
+#cette fonction retourne une liste des notes évaluées sur b
+function evaluationProcessWR (listAgentsEnquetes, agent b, profondeur, largeur, res):
+	if profondeur == 0:
+		res += searchInMyDatabaseAllNoteWith(agent b)
+		return res
+	else
+		let tmp = this.everyoneInRadius.trim(listAgentsEnquetes)
+		askingAgents = select(largeur * random agents in tmp)
+		res += searchInMyDatabaseAllNoteWith(agent b)
+		for (i in largeur):
+			res += evaluationProcessWR(listAgentsEnquetes *union* askingAgents, agent b, profondeur - 1, largeur, res)
+		return res
+
 
 
 
