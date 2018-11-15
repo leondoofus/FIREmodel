@@ -322,3 +322,5 @@ function go :
 
 	if(interactionRounds>roundsNb):
 		STOP
+
+	deleteOldRatings

@@ -10,3 +10,79 @@ NOTES !
 # On élimine le terme c complètement car inutile..
 
 #L'index de l'intéraction commence à 0
+
+
+#Je garde ça ici on en aura peut etre besoion (random move initial de Leon)
+
+to random-move ;for everyone
+  ask turtles [
+    set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
+    set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
+    ifelse (random 2) = 0
+      [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+      [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+    setxyz x-pos y-pos z-pos
+  ]
+end
+
+##
+
+
+  create-consummers Nc
+  [
+    set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
+    set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
+    ifelse (random 2) = 0
+      [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+      [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+    setxyz x-pos y-pos z-pos
+    set radius shape-size * vary 0.1 0.2
+    set color violet
+    set activity-level vary 0.25 1.00
+    set ratings []
+    set t-model "IT"
+    set has-trust-value []
+    set no-trust-value []
+    ;set shape circle
+  ]
+
+  create-providers goodP-number + ordinaryP-number + intermittentP-number + badP-number
+  [
+    set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
+    set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
+    ifelse (random 2) = 0
+      [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+      [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+    setxyz x-pos y-pos z-pos
+    set radius shape-size * vary 0.1 0.2
+    set color green
+    ;set shape square    
+    if cptP < goodP-number [
+      set p-type "good"
+      set performance-level vary PL-GOOD PL-PERFECT
+      
+      set color green
+    ]
+    if (cptP >= goodP-number) and (cptP < goodP-number + ordinaryP-number) [
+      set p-type "ordinary"
+      set performance-level vary PL-OK PL-GOOD
+      
+      set color yellow
+    ]
+    if (cptP >= ordinaryP-number + goodP-number) and (cptP < intermittentP-number + goodP-number + ordinaryP-number) [
+      set p-type "intermittent"
+      set performance-level (PL-BAD + PL-GOOD) / 2
+      
+      set color brown
+    ]
+    
+    if (cptP >= ordinaryP-number + goodP-number + intermittentP-number) and (cptP < badP-number + intermittentP-number + goodP-number + ordinaryP-number) [
+      set p-type "bad"
+      set performance-level vary PL-WORST PL-OK
+      
+      set color red
+    ]
+    set cptP cptP + 1
+    
+    set received-ratings []
+  ] 

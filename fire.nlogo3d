@@ -1,3 +1,4 @@
+;_________________________ globals ________________
 globals [
   shape-size ;; sphere's radius
   rounds-number
@@ -8,30 +9,36 @@ globals [
   Nc
   ;;rangeActivityLevel?
   H
-  lambaIT
+  lambdaIT
   nBF
   nRL
   wI wR wW wC
   gammaI gammaR gammaW gammaC
   PL-PERFECT PL-GOOD PL-OK PL-BAD PL-WORST
+  GOOD-DEV ORDINARY-DEV BAD-DEV
   DEGRADATION
   UGs-fire
-  UGs-NoTModel
+  UGs-NoTrust
   ;;interactionRounds
   T
   provider-type
   trust-model
   component
-  cptC ;; meter to attribuate unique ids for consumers
-  cptP ;; and for providers
+  cptP
+  pCPC
+  pPPC
+  pCLC
+  pPLC
+  M
+  pMuC
+  pProfileSwitch
+  maxAngD
+
 ]
+
+;_________________________ breeds properties ________________
 breed [consummers consummer]
 breed [providers provider]
-
-
-;rates will be list like this [a,b,i,v] where a:consumer b:provider
-; i:interactionNb and v is the value of the rate
-
 
 turtles-own [
   x-pos
@@ -43,7 +50,9 @@ turtles-own [
 consummers-own [
   activity-level
 	ratings ;; list
-	t-model
+  ;rates will be list like this [a,b,i,v] where a:consumer b:provider
+  ; i:interactionNb and v is the value of the rate
+	t-model ;; can be "IT" or "NoTrust" for now
 	has-trust-value ;;list
 	no-trust-value ;; list
 
@@ -52,9 +61,10 @@ consummers-own [
 providers-own[
   p-type
   performance-level
-  received-ratings
+  received-ratings  ; rates will be in form r=[a,i,v] maybe a and i  useless ?
 ]
 
+;_________________________ setup ________________
 to setup
   clear-all
   ;;setup all statics variables
@@ -66,7 +76,7 @@ to setup
   set badP-number 45
   set Nc 500
   set H 10
-  set lambaIT -5 / ln(0.5)
+  set lambdaIT -5 / ln(0.5)
   set nBF 2
   set nRL 5
   set wI 2
@@ -80,95 +90,106 @@ to setup
   set PL-PERFECT 10
   set PL-GOOD 5
   set PL-OK 0
-  set PL-BAD -0.5
+  set PL-BAD -5
   set PL-WORST -10
+  set GOOD-DEV 1
+  set ORDINARY-DEV 2
+  set BAD-DEV 2
   set DEGRADATION 1
   set UGs-fire []
-  set UGs-NoTModel []
+  set UGs-NoTrust []
   set T 100
   set provider-type ["good" "bad" "intermittent" "ordinary"]
   set trust-model ["NoTrust" "IT" "ITWR"]
   set component ["IT" "WR" "CR"]
-
+  set pCPC 0.05
+  set pPPC 0.02
+  set pCLC 0.1
+  set pPLC 0.1
+  set M 1
+  set pMuC 0.1
+  set pProfileSwitch 0.02
+  set maxAngD pi / 20
   set cptP 0
-  create-consummers Nc
-  [
-    set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
-    set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
-    ifelse (random 2) = 0
-      [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
-      [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
-    setxyz x-pos y-pos z-pos
-    set radius shape-size * vary 0.1 0.2
-    set color violet
-    set activity-level vary 0.25 1.00
-    set ratings []
-    set t-model "NoTrust"
-    set has-trust-value []
-    set no-trust-value []
-    ;set shape circle
-  ]
-  create-consummers Nc
-  [
-    set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
-    set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
-    ifelse (random 2) = 0
-      [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
-      [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
-    setxyz x-pos y-pos z-pos
-    set radius shape-size * vary 0.1 0.2
-    set color violet
-    set activity-level vary 0.25 1.00
-    set ratings []
-    set t-model "IT"
-    set has-trust-value []
-    set no-trust-value []
-    ;set shape circle
-  ]
-  create-providers goodP-number + ordinaryP-number + intermittentP-number + badP-number
-  [
-    set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
-    set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
-    ifelse (random 2) = 0
-      [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
-      [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
-    setxyz x-pos y-pos z-pos
-    set radius shape-size * vary 0.1 0.2
-    set color green
-    ;set shape square
-    if cptP < goodP-number [
-      set p-type "good"
-      set performance-level vary PL-GOOD PL-PERFECT
 
-      set color green
-    ]
-    if (cptP >= goodP-number) and (cptP < goodP-number + ordinaryP-number) [
-      set p-type "ordinary"
-      set performance-level vary PL-OK PL-GOOD
+  add-consumer Nc "NoTrust"
+  add-consumer Nc "IT"
 
-      set color yellow
-    ]
-    if (cptP >= ordinaryP-number + goodP-number) and (cptP < intermittentP-number + goodP-number + ordinaryP-number) [
-      set p-type "intermittent"
-      set performance-level 0
-
-      set color brown
-    ]
-
-    if (cptP >= ordinaryP-number + goodP-number + intermittentP-number) and (cptP < badP-number + intermittentP-number + goodP-number + ordinaryP-number) [
-      set p-type "bad"
-      set performance-level vary PL-WORST PL-OK
-
-      set color red
-    ]
-    set cptP cptP + 1
-
-    set received-ratings []
-  ]
+  add-provider goodP-number "good"
+  add-provider ordinaryP-number "ordinary"
+  add-provider badP-number "bad"
+  add-provider intermittentP-number "intermittent"
 
   reset-ticks
 end
 
+to add-consumer [number tmodel]
+  create-consummers number
+  [
+    set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
+    set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
+    ifelse (random 2) = 0
+      [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+      [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+    setxyz x-pos y-pos z-pos
+    set radius shape-size * vary 0.1 0.2
+    set color violet
+    set activity-level vary 0.25 1.00
+    set ratings []
+    set t-model tmodel
+    set has-trust-value []
+    set no-trust-value []
+    ;set shape circle
+  ]
+end
+
+to add-provider [number ptype]
+  create-providers number
+  [
+    set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
+    set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
+    ifelse (random 2) = 0
+      [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+      [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+    setxyz x-pos y-pos z-pos
+    set radius shape-size * vary 0.1 0.2
+    set received-ratings []
+    ;set p-type ptype
+    setup-provider-type ptype
+
+
+  ]
+end
+
+to setup-provider-type [ptype]
+  set p-type ptype
+  set color green
+  let ppt get-type-properties ptype
+  set performance-level vary item 0 ppt item 1 ppt
+  if p-type = "bad" [ set color red ]
+  if p-type = "ordinary" [ set color yellow ]
+  if p-type = "intermittent" [
+    set color brown
+    set performance-level (item 0 ppt + item 1 ppt) / 2
+  ]
+
+end
+
+;_________________________ enum provider type ________________
+to-report get-type-properties [ptype]
+
+  if ptype = "good" [
+    report (list PL-PERFECT PL-GOOD GOOD-DEV) ]
+  if ptype = "ordinary" [
+    report (list PL-OK PL-GOOD ORDINARY-DEV) ]
+  if ptype = "intermittent" [
+    report (list PL-BAD PL-GOOD 0) ]
+  if ptype = "bad" [
+    report (list PL-WORST PL-OK BAD-DEV) ]
+end
+
+
+;_________________________ usefull methods ________________
 to-report vary [ #min #max ]  ; random float in given range
   report #min + random-float (#max - #min)
 end
@@ -178,27 +199,73 @@ to-report great-distance [x1 y1 z1 x2 y2 z2]
   report acos(dotproduct) * shape-size
 end
 
-to get-T [k a-id b-id]
-  ;; where does the tables RW RI come from ?
-end
 
-to-report get-reliability [a-id b-id TI]
-
-  report 0
-end
-
-
-to random-move ;for everyone
-  ask turtles [
-    set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
-    set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
-    ifelse (random 2) = 0
-      [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
-      [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
-    setxyz x-pos y-pos z-pos
+;_________________________ set rating & trust value ________________
+to-report get-rates [a b]
+  let r-ab []
+  foreach ratings [
+    r ->
+    if (item 1 r = b) and (item 0 r = a) [
+      set r-ab lput r r-ab
+    ]
   ]
+  report r-ab
 end
 
+
+to-report has-ratings? [x]
+  foreach ratings [
+    r ->
+    if item 1 r = x [report true]
+  ]
+  report false
+end
+
+
+to-report get-t-value [a b]
+  let t-value 0
+  let weight-sum 0
+  let r-ab get-rates a b
+  foreach r-ab [
+    r ->
+    let weight exp(-1 * ticks - item 2 r) / lambdaIT
+		set weight-sum weight-sum + weight
+		set t-value t-value + weight * item 3 r
+]
+  set t-value t-value / weight-sum
+  report t-value
+end
+
+
+to-report get-reliability [a b t-value]
+  let gamma gammaI
+  let p-d 0
+	let weight-sum 0
+  let r-ab get-rates a b
+	foreach r-ab [
+    r ->
+		let weight exp(-1 * ticks - item 2 r) / lambdaIT
+		set weight-sum weight-sum + weight
+		set p-d p-d + weight * abs (item 3 r - t-value)
+	]
+	set p-d 1 - p-d / (2 * weight-sum)
+	let pr 1 - exp (-1 * gamma * weight-sum)
+	
+  report pr * p-d
+end
+
+to-report sort-with [ key lst ]
+  report sort-by [ [a b] -> (runresult key a) > (runresult key b) ] lst
+end
+
+
+to delete-old-ratings
+  set ratings sort-with [ l -> item 1 l ] ratings
+  set ratings sublist ratings 0 H
+end
+
+
+;_________________________ provider selection________________
 to-report select-random-provider ;[x y z r]
   ;let provs []
   ;ask providers
@@ -215,7 +282,7 @@ to-report select-best-provider
   foreach has-trust-value
   [
     x ->
-    let t-value getT self x
+    let t-value get-t-value who x
     if t-value > best-value
     [
       set best-value t-value
@@ -223,15 +290,6 @@ to-report select-best-provider
     ]
   ]
   report best-p
-end
-;ask turtle 2 [ create-link-with turtle 1 ]
-
-to-report has-ratings? [x]
-  foreach ratings [
-    r ->
-    if item 1 r = x [report true]
-  ]
-  report false
 end
 
 to-report select-provider
@@ -260,52 +318,161 @@ to-report select-provider
 
     let best-p select-best-provider
 
+    let er-exploit get-t-value self best-p
+
+    let average-ug 0
+    let nb-providers 0
+    let average-ugs []
+    ask providers [
+      let intervalle get-type-properties p-type
+      ;let x mean item 0 intervalle item 1 intervalle
+      let x mean [performance-level] of providers
+      set average-ugs lput x average-ugs
+    ]
+
+    set average-ug sum average-ugs / length average-ugs
+
+    let er-explore average-ug
+
+    set T T / 1.5
+
+    let p-exploit (exp ( er-exploit / T ) ) / ( exp (er-exploit / T) + exp (er-explore / T) )
+
+    let r random-float 1.0
+    ifelse r < p-exploit
+    [report best-p]
+    [report select-random-provider]
+  ]
+
+end
+
+;_________________________ dynamic environment ________________
+
+;random amount of agent entering and quiting the world
+to random-setup
+
+  ;; on suppose qu'on garde les même proportions (autant de good, bad etc)
+  let n random pCPC * count consummers
+  let i 0
+  let c one-of consummers
+  let p one-of providers
+  let tmodel ""
+  while [i < n]
+  [
+    ask c [
+      set tmodel t-model
+      die
+    ]
+
+    add-consumer 1 tmodel
+    set c one-of consummers
+    set i i + 1
 
   ]
-  report 0
+
+  set i 0
+  set n random pPPC * count providers
+  let ptype ""
+
+  while [i < n]
+  [
+    ask p [
+      set ptype p-type
+      die
+    ]
+
+    add-provider 1 ptype
+    set p one-of providers
+    set i i + 1
+
+  ]
+
+end
+
+to random-move
+  let phi vary (-1 * maxAngD) maxAngD
+  let theta vary (-1 * maxAngD) maxAngD
+  ;new position ?? A toi de jouer LEON ! :D
+  let r random-float 1
+
+  if ((r < pPLC) and (breed = "provider")) or ((r < pCLC) and (breed = "consumer"))
+  [;movetonewposition
+  ]
+end
+
+to switch-behaviour
+  let r random-float 1
+  ifelse r < pProfileSwitch [
+    ;;A VERIFIER
+    let new-type one-of provider-type
+    setup-provider-type new-type
+  ]
+  [
+    if r < pMuC [
+      let deltaMu vary (-1 * M) M
+      set performance-level performance-level + deltaMu
+    ]
+  ]
 end
 
 
 
+
+
+;_________________________ interaction ________________
+
+to interact-with [b]
+  ;let p b of providers
+  let ug 0
+
+  ask b [
+    ;; We set the ug by defining the type of provider
+    ifelse p-type = "intermittent"
+    [set ug vary PL-BAD PL-GOOD]
+    [
+      let ppt get-type-properties p-type
+      set ug random-normal performance-level item 2 ppt
+    ]
+
+    ;; if outside of the provider’s normal operational, uG degraded linearly
+    ;;TODO
+
+  ]
+  ;add utilities to global lists
+  if t-model = "IT" [ set ugs-fire lput ug UGs-fire ]
+  if t-model = "NoTrust" [ set ugs-fire lput ug UGs-NoTrust ]
+
+  ;The rating value is in [-1;1] and the performance in [-10;10]
+  let r-value ug / 10
+
+  ;store
+  set ratings lput (list who b ticks r-value) ratings
+  ask b [ set received-ratings lput (list who ticks r-value) received-ratings ]
+
+end
+
+
+;_________________________ main loop ________________
 to go
 
   ask consummers [
+
+    ;we don't store too much ratings in local database ( > H )
+    if length ratings > H [delete-old-ratings]
+
     if random-float 1.0 < activity-level [
       let prov select-provider
-
-      ;interact-with provider
+      interact-with prov
     ]
+
+    random-move
   ]
 
-  ask consummers
-  [let x1 x-pos
-   let y1 y-pos
-   let z1 z-pos
-   let r1 radius
-   let prov who
-   if random-float 1.0 < activity-level
-     [if Model = "NoTrust"
-       [set prov select-random-provider]
-       if Model = "Fire"
-       [ask providers
-          [
-            ;; il y a un if else ici que je ne comprends pas
-          ]
-          if empty? has-trust-value
-          [set prov select-random-provider]
-          if empty? no-trust-value
-          [;;select best provider
-          ]
+  ask providers [switch-behaviour]
 
+  random-setup
 
-       ]
-     ]
-    if prov != who
-    [
-      ;;interact
-    ]
-   ]
-  ;random-move
+  if ticks > rounds-number [stop]
 
 
   tick
@@ -449,6 +616,17 @@ réglable : H , nBF, nRL, degradation, temperature, pourcentage agents, poids de
 11
 103.0
 1
+
+MONITOR
+276
+168
+361
+213
+Consumers
+count consummers
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
