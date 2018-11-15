@@ -95,8 +95,8 @@ to setup
   set ORDINARY-DEV 2
   set BAD-DEV 2
   set DEGRADATION 1
-  set UGs-fire []
-  set UGs-NoTrust []
+  set UGs-fire [0]
+  set UGs-NoTrust [0]
   set T 100
   set provider-type ["good" "bad" "intermittent" "ordinary"]
   set trust-model ["NoTrust" "IT" "ITWR"]
@@ -476,6 +476,7 @@ to go
 
   ;set-mean-ugs
 
+
   if ticks > rounds-number [stop]
 
 
@@ -623,10 +624,10 @@ count consummers
 11
 
 PLOT
-73
-235
-273
-385
+193
+238
+616
+548
 Comparison UG
 NIL
 NIL
@@ -638,8 +639,8 @@ true
 false
 "" ""
 PENS
-"noTrust" 1.0 0 -1184463 true "" "plot mean UGs-NoTrust "
-"Fire" 1.0 0 -10022847 true "" "plot mean UGs-fire"
+"noTrust" 1.0 0 -2674135 true "" "plot mean UGs-NoTrust "
+"Fire" 1.0 0 -14454117 true "" "plot mean UGs-fire"
 
 @#$#@#$#@
 ## WHAT IS IT?
