@@ -58,7 +58,7 @@ Nc=500	#Nb of consumer agents in each group
 rangeActivityLevel = [0.25,1.00] #alpha
 
 #Static Parameters
-H = 10
+H = 10 
 lambdaIT = -(5/ln(0.5))
 nBF= 2
 nRL=5
