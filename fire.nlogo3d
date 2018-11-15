@@ -19,7 +19,6 @@ globals [
   DEGRADATION
   UGs-fire
   UGs-NoTrust
-  ;;interactionRounds
   T
   provider-type
   trust-model
@@ -351,7 +350,9 @@ end
 ;random amount of agent entering and quiting the world
 to random-setup
 
-  ;; on suppose qu'on garde les même proportions (autant de good, bad etc)
+  ;; on suppose qu'on garde les même proportions pour les consumers (notrust vs fire)
+  ;; et les providers (autant de good, bad etc)
+  ;; a vérifier (on est peut être pas obligé)
   let n random pCPC * count consummers
   let i 0
   let c one-of consummers
@@ -439,8 +440,8 @@ to interact-with [b]
 
   ]
   ;add utilities to global lists
-  if t-model = "IT" [ set ugs-fire lput ug UGs-fire ]
-  if t-model = "NoTrust" [ set ugs-fire lput ug UGs-NoTrust ]
+  if t-model = "IT" [ set UGs-fire lput ug UGs-fire ]
+  if t-model = "NoTrust" [ set UGs-NoTrust lput ug UGs-NoTrust ]
 
   ;The rating value is in [-1;1] and the performance in [-10;10]
   let r-value ug / 10
@@ -450,6 +451,7 @@ to interact-with [b]
   ask b [ set received-ratings lput (list who ticks r-value) received-ratings ]
 
 end
+
 
 
 ;_________________________ main loop ________________
@@ -471,6 +473,8 @@ to go
   ask providers [switch-behaviour]
 
   random-setup
+
+  ;set-mean-ugs
 
   if ticks > rounds-number [stop]
 
@@ -542,16 +546,6 @@ NIL
 NIL
 0
 
-CHOOSER
-52
-182
-190
-227
-Model
-Model
-"NoTrust" "FIRE"
-0
-
 MONITOR
 119
 52
@@ -618,15 +612,34 @@ réglable : H , nBF, nRL, degradation, temperature, pourcentage agents, poids de
 1
 
 MONITOR
-276
-168
-361
-213
+27
+51
+112
+96
 Consumers
 count consummers
 17
 1
 11
+
+PLOT
+73
+235
+273
+385
+Comparison UG
+NIL
+NIL
+0.0
+10.0
+-2.0
+2.0
+true
+false
+"" ""
+PENS
+"noTrust" 1.0 0 -1184463 true "" "plot mean UGs-NoTrust "
+"Fire" 1.0 0 -10022847 true "" "plot mean UGs-fire"
 
 @#$#@#$#@
 ## WHAT IS IT?
