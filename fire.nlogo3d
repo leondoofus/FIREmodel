@@ -1,14 +1,14 @@
 ;_________________________ globals ________________
 globals [
   shape-size ;; sphere's radius
-  rounds-number
+  ;rounds-number
   goodP-number
   ordinaryP-number
   intermittentP-number
   badP-number
   Nc
   ;;rangeActivityLevel?
-  H
+  ;H
   lambdaIT
   nBF
   nRL
@@ -32,6 +32,8 @@ globals [
   pMuC
   pProfileSwitch
   maxAngD
+  ;;Max distance that can have two agents
+  maxD
 
 ]
 
@@ -68,13 +70,13 @@ to setup
   clear-all
   ;;setup all statics variables
   set shape-size 1000.0
-  set rounds-number 500
+  ;set rounds-number 500
   set goodP-number 10
   set ordinaryP-number 40
   set intermittentP-number 5
   set badP-number 45
   set Nc 500
-  set H 10
+  ;set H 10
   set lambdaIT -5 / ln(0.5)
   set nBF 2
   set nRL 5
@@ -110,6 +112,10 @@ to setup
   set pProfileSwitch 0.02
   set maxAngD pi / 20
   set cptP 0
+  ;;Setting the maximum distance that can separate two agents
+  ;;(for decreasing UG when out of range)
+  set maxD great-distance 0 0 0 0 0 shape-size * 2
+
 
   add-consumer Nc "NoTrust"
   add-consumer Nc "IT"
@@ -118,6 +124,10 @@ to setup
   add-provider ordinaryP-number "ordinary"
   add-provider badP-number "bad"
   add-provider intermittentP-number "intermittent"
+
+
+
+
 
   reset-ticks
 end
@@ -151,9 +161,9 @@ to add-provider [number ptype]
       [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
       [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
     setxyz x-pos y-pos z-pos
-    set radius shape-size * vary 0.1 0.2
+    ;;set radius shape-size * vary 0.1 0.2
+    set radius shape-size * vary 0.25 0.5
     set received-ratings []
-    ;set p-type ptype
     setup-provider-type ptype
 
 
@@ -196,6 +206,20 @@ end
 to-report great-distance [x1 y1 z1 x2 y2 z2]
   let dotproduct (x1 * x2 + y2 * y2 + z1 * z2)/(shape-size ^ 2) ; normalized
   report acos(dotproduct) * shape-size
+end
+
+to-report ug-out-of-range [ug great-d ro]
+  ; shape-size / 4 is the minimum ro that can have any agent (1000/4 = 250)
+  let maxdiff maxD - ( shape-size / 4 )
+
+  let d-factor 2 / (maxdiff)
+  ;let new-ug ug - ( ug * d-factor * (great-d - ro) )
+  let new-ug ug - ug * (great-d - ro) / maxdiff
+  if new-ug < -10 [set new-ug -10]
+  if new-ug > 10 [set new-ug 10]
+
+  ;show new-ug
+  report new-ug
 end
 
 
@@ -417,6 +441,16 @@ to switch-behaviour
 end
 
 
+;;Displays (for debug)
+
+to showRatings
+  foreach ratings [
+    r ->
+    show item 3 r
+  ]
+end
+
+
 
 
 
@@ -425,6 +459,9 @@ end
 to interact-with [b]
   ;let p b of providers
   let ug 0
+  let x1 x-pos
+  let y1 y-pos
+  let z1 z-pos
 
   ask b [
     ;; We set the ug by defining the type of provider
@@ -435,8 +472,16 @@ to interact-with [b]
       set ug random-normal performance-level item 2 ppt
     ]
 
-    ;; if outside of the provider’s normal operational, uG degraded linearly
-    ;;TODO
+    let d abs great-distance x-pos y-pos z-pos x1 y1 z1
+
+    if d > radius [
+      ;; if outside of the provider’s normal operational, uG degraded linearly
+
+      set ug ug-out-of-range ug d radius
+      ;show d
+    ]
+
+
 
   ]
   ;add utilities to global lists
@@ -474,15 +519,13 @@ to go
 
   random-setup
 
-  ;set-mean-ugs
-
-
   if ticks > rounds-number [stop]
 
 
   tick
 
 end
+
 @#$#@#$#@
 GRAPHICS-WINDOW
 0
@@ -641,6 +684,36 @@ false
 PENS
 "noTrust" 1.0 0 -2674135 true "" "plot mean UGs-NoTrust "
 "Fire" 1.0 0 -14454117 true "" "plot mean UGs-fire"
+
+SLIDER
+39
+184
+211
+217
+rounds-number
+rounds-number
+0
+500
+500.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+30
+272
+202
+305
+H
+H
+0
+50
+10.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
