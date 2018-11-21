@@ -1,11 +1,6 @@
 NOTES !
 
 
-#  In addition, if a consumer agent is situated 
-# outside of the provider’s normal operational range (->ro) 
-# the service quality of that provider is also degraded linearly
-# in proportion to the distance between the provider and the consumer.
-
 
 # On élimine le terme c complètement car inutile..
 
@@ -25,3 +20,14 @@ to random-move ;for everyone
   ]
 end
 
+
+# Conversion from cartesian coordinates to polar coordinates
+https://en.wikipedia.org/wiki/Spherical_coordinate_system#Cartesian_coordinates
+r = sqrt (x*x + y*y + z*z)
+teta = arcos (z/r)
+phi = arctan (y/x)
+
+# Conversion from polar coordinates to cartesian coordinates
+x = r * sin (theta) * cos (phi)
+y = r * sin (theta) * sin (phi)
+z= r * cos (theta)

@@ -75,6 +75,7 @@ to setup
   set ordinaryP-number 40
   set intermittentP-number 5
   set badP-number 45
+
   set Nc 500
   ;set H 10
   set lambdaIT -5 / ln(0.5)
@@ -124,9 +125,6 @@ to setup
   add-provider ordinaryP-number "ordinary"
   add-provider badP-number "bad"
   add-provider intermittentP-number "intermittent"
-
-
-
 
 
   reset-ticks
@@ -198,7 +196,7 @@ to-report get-type-properties [ptype]
 end
 
 
-;_________________________ usefull methods ________________
+;_________________________ calculation methods ________________
 to-report vary [ #min #max ]  ; random float in given range
   report #min + random-float (#max - #min)
 end
@@ -210,11 +208,12 @@ end
 
 to-report ug-out-of-range [ug great-d ro]
   ; shape-size / 4 is the minimum ro that can have any agent (1000/4 = 250)
+  ;Do we tahe the distance between the two agents - the operating radius
   let maxdiff maxD - ( shape-size / 4 )
 
-  let d-factor 2 / (maxdiff)
-  ;let new-ug ug - ( ug * d-factor * (great-d - ro) )
-  let new-ug ug - ug * (great-d - ro) / maxdiff
+  ;let new-ug ug - ug * (great-d - ro) / maxdiff
+  ;;Or just the distance ?
+  let new-ug ug - ug * great-d / maxdiff
   if new-ug < -10 [set new-ug -10]
   if new-ug > 10 [set new-ug 10]
 
@@ -222,6 +221,19 @@ to-report ug-out-of-range [ug great-d ro]
   report new-ug
 end
 
+to-report to-polar [x y z]
+  let r sqrt (x ^ 2 + y ^ 2 + z ^ 2)
+  let theta acos (z / r)
+  let phi atan y  x
+  report (list r theta phi)
+end
+
+to-report to-cartesian [r theta phi]
+  let x (r * sin (theta) * cos (phi))
+  let y (r * sin (theta) * sin (phi))
+  let z (r * cos (theta))
+  report (list x y z)
+end
 
 ;_________________________ set rating & trust value ________________
 to-report get-rates [a b]
@@ -353,9 +365,7 @@ to-report select-provider
       set average-ugs lput x average-ugs
     ]
 
-    set average-ug sum average-ugs / length average-ugs
-
-    let er-explore average-ug
+    let er-explore mean average-ugs
 
     set T T / 1.5
 
@@ -377,7 +387,9 @@ to random-setup
   ;; on suppose qu'on garde les même proportions pour les consumers (notrust vs fire)
   ;; et les providers (autant de good, bad etc)
   ;; a vérifier (on est peut être pas obligé)
-  let n random pCPC * count consummers
+  let n random (pCPC * count consummers)
+
+
   let i 0
   let c one-of consummers
   let p one-of providers
@@ -396,7 +408,7 @@ to random-setup
   ]
 
   set i 0
-  set n random pPPC * count providers
+  set n random (pPPC * count providers)
   let ptype ""
 
   while [i < n]
@@ -415,13 +427,27 @@ to random-setup
 end
 
 to random-move
-  let phi vary (-1 * maxAngD) maxAngD
-  let theta vary (-1 * maxAngD) maxAngD
-  ;new position ?? A toi de jouer LEON ! :D
-  let r random-float 1
 
-  if ((r < pPLC) and (breed = "provider")) or ((r < pCLC) and (breed = "consumer"))
-  [;movetonewposition
+  let rand random-float 1
+
+  if ((rand < pPLC) and (breed = "provider")) or ((rand < pCLC) and (breed = "consumer"))
+  [
+    ;; Takes randomly the variation
+    let delta-phi vary (-1 * maxAngD) maxAngD
+    let delta-theta vary (-1 * maxAngD) maxAngD
+
+    ;; conversion from cartesian to polar
+    let polars to-polar x-pos y-pos z-pos
+    let r item 0 polars
+    let theta item 1 polars
+    let phi item 2 polars
+    ;; adding variations
+    set theta (theta + delta-theta)
+    set phi (phi + delta-phi)
+    ;; get new cartesian coordinates
+    let new-coordinates to-cartesian r theta phi
+    ;; move
+    setxyz (item 0 new-coordinates) (item 1 new-coordinates) (item 2 new-coordinates)
   ]
 end
 
@@ -515,7 +541,7 @@ to go
     random-move
   ]
 
-  ask providers [switch-behaviour]
+ ; ask providers [switch-behaviour]
 
   random-setup
 
@@ -709,7 +735,7 @@ H
 H
 0
 50
-10.0
+5.0
 1
 1
 NIL
