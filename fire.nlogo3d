@@ -146,7 +146,7 @@ to add-consumer [number tmodel]
     set t-model tmodel
     set has-trust-value []
     set no-trust-value []
-    ;set shape circle
+
   ]
 end
 
@@ -251,7 +251,8 @@ end
 to-report has-ratings? [x]
   foreach ratings [
     r ->
-    if item 1 r = x [report true]
+    if item 1 r = x [
+      report true]
   ]
   report false
 end
@@ -264,7 +265,7 @@ to-report get-t-value [a b]
   foreach r-ab [
     r ->
     let weight exp(-1 * ticks - item 2 r) / lambdaIT
-		set weight-sum weight-sum + weight
+		set weight-sum (weight-sum + weight)
 		set t-value t-value + weight * item 3 r
 ]
   set t-value t-value / weight-sum
@@ -333,15 +334,19 @@ to-report select-provider
   ]
 
   if t-model = "IT" [
+
     let providersIds []
     ask providers [
       set providersIds lput who providersIds
     ]
+
     foreach providersIds [
       x ->
       ifelse has-ratings? x [
+
         set has-trust-value lput x has-trust-value
       ]
+
       [
         set no-trust-value lput x no-trust-value
       ]
@@ -538,12 +543,12 @@ to go
       interact-with prov
     ]
 
-    random-move
+    ;random-move
   ]
 
  ; ask providers [switch-behaviour]
 
-  random-setup
+  ;random-setup
 
   if ticks > rounds-number [stop]
 
