@@ -32,4 +32,12 @@ j'ai mis de 0.25 à 0.5 plutot)
 • Pour l'instant le dynamisme n'y est pas (personne ne bouge). 
 J'ai tout mis en commentaire parce que on en a pas besoin pour cette partie.
 
-N'hésites pas si t'as des questions :D
+22.11.18
+• Problems (has trust value vide + bug calculs exp) fixed
+• La moyenne des UGs monte puis redescend après une trentaine d'itérations 
+(du surement à un H trop petit)
+• Température à vérifier
+• Problème avec p-exploit -> Monte trop vite à 0.5 (mais peut etre que c'est normal)
+	On a bien er-exploit petit au début et augmente
+			et er-explore est statique ( car on prend tous les providers du monde. 
+			Il faut peut être prendre juste les providers qu'il connaît - pas logique)

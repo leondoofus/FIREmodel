@@ -35,6 +35,9 @@ globals [
   ;;Max distance that can have two agents
   maxD
 
+  ;; to plot decision between exploit and explore
+  choiceExp
+  choiceExp2
 ]
 
 ;_________________________ breeds properties ________________
@@ -56,6 +59,8 @@ consummers-own [
 	t-model ;; can be "IT" or "NoTrust" for now
 	has-trust-value ;;list
 	no-trust-value ;; list
+
+  known-providers;;list
 
 ]
 
@@ -100,7 +105,7 @@ to setup
   set DEGRADATION 1
   set UGs-fire [0]
   set UGs-NoTrust [0]
-  set T 100
+  ;set T 100
   set provider-type ["good" "bad" "intermittent" "ordinary"]
   set trust-model ["NoTrust" "IT" "ITWR"]
   set component ["IT" "WR" "CR"]
@@ -116,7 +121,8 @@ to setup
   ;;Setting the maximum distance that can separate two agents
   ;;(for decreasing UG when out of range)
   set maxD great-distance 0 0 0 0 0 shape-size * 2
-
+  set choiceExp [0]
+  set choiceExp2 [0]
 
   add-consumer Nc "NoTrust"
   add-consumer Nc "IT"
@@ -146,6 +152,7 @@ to add-consumer [number tmodel]
     set t-model tmodel
     set has-trust-value []
     set no-trust-value []
+    set known-providers []
 
   ]
 end
@@ -262,13 +269,20 @@ to-report get-t-value [a b]
   let t-value 0
   let weight-sum 0
   let r-ab get-rates a b
+  if length r-ab = 0 [
+    show "Liste vide"
+    show a
+    show b
+  ]
+
   foreach r-ab [
     r ->
-    let weight exp(-1 * ticks - item 2 r) / lambdaIT
+    let weight exp(-1 * (ticks - item 2 r)) / lambdaIT
+
 		set weight-sum (weight-sum + weight)
 		set t-value t-value + weight * item 3 r
-]
-  set t-value t-value / weight-sum
+  ]
+  set t-value (t-value / weight-sum)
   report t-value
 end
 
@@ -309,7 +323,9 @@ to-report select-random-provider ;[x y z r]
    ;if great-distance x y z x-pos y-pos z-pos < r
     ;[set provs lput who provs]
   ;]
-  report one-of providers
+  let id 0
+  ask one-of providers [set id who]
+  report id
 end
 
 to-report select-best-provider
@@ -339,7 +355,9 @@ to-report select-provider
     ask providers [
       set providersIds lput who providersIds
     ]
-
+    ;Back to empty list (because some ratings have been deleted + dynamism)
+    set has-trust-value []
+    set no-trust-value []
     foreach providersIds [
       x ->
       ifelse has-ratings? x [
@@ -358,25 +376,34 @@ to-report select-provider
 
     let best-p select-best-provider
 
-    let er-exploit get-t-value self best-p
+    let er-exploit get-t-value who best-p
 
     let average-ug 0
     let nb-providers 0
     let average-ugs []
-    ask providers [
-      let intervalle get-type-properties p-type
+
+    ;foreach known-providers[
+      ;x ->
+      ;let intervalle get-type-properties p-type
       ;let x mean item 0 intervalle item 1 intervalle
-      let x mean [performance-level] of providers
-      set average-ugs lput x average-ugs
-    ]
+      ;ask provider x [set average-ugs lput performance-level average-ugs]
+    ;]
 
-    let er-explore mean average-ugs
+    ;let er-explore mean average-ugs
 
-    set T T / 1.5
+    let er-explore mean [performance-level] of providers
 
-    let p-exploit (exp ( er-exploit / T ) ) / ( exp (er-exploit / T) + exp (er-explore / T) )
-
+    ;set T initialTemperature * ((99 / 100) ^ (ticks - 1))
+    set T (initialTemperature - (ticks / 500))
+    let a1 exp (er-exploit / T)
+    let b1 exp (er-explore / T)
+    set b1 (a1 + b1)
+    let p-exploit (a1 / b1)
+    ;;For debug
+    ;set choiceExp lput p-exploit choiceExp
+    ;set choiceExp2 lput (2 * a1 - b1) choiceExp
     let r random-float 1.0
+
     ifelse r < p-exploit
     [report best-p]
     [report select-random-provider]
@@ -494,7 +521,11 @@ to interact-with [b]
   let y1 y-pos
   let z1 z-pos
 
+  let provider-id 0
+
+
   ask b [
+    set provider-id who
     ;; We set the ug by defining the type of provider
     ifelse p-type = "intermittent"
     [set ug vary PL-BAD PL-GOOD]
@@ -523,7 +554,8 @@ to interact-with [b]
   let r-value ug / 10
 
   ;store
-  set ratings lput (list who b ticks r-value) ratings
+  set known-providers lput provider-id known-providers
+  set ratings lput (list who provider-id ticks r-value) ratings
   ask b [ set received-ratings lput (list who ticks r-value) received-ratings ]
 
 end
@@ -540,7 +572,7 @@ to go
 
     if random-float 1.0 < activity-level [
       let prov select-provider
-      interact-with prov
+      interact-with provider prov
     ]
 
     ;random-move
@@ -739,11 +771,62 @@ H
 H
 0
 50
-0.0
+10.0
 1
 1
 NIL
 HORIZONTAL
+
+SLIDER
+18
+353
+190
+386
+initialTemperature
+initialTemperature
+0
+1000
+1.0
+1
+1
+NIL
+HORIZONTAL
+
+PLOT
+749
+351
+949
+501
+Temperature (choice explore-exploit)
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot T"
+
+PLOT
+880
+132
+1080
+282
+exploit vs explore
+NIL
+NIL
+0.0
+10.0
+0.0
+1.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot mean choiceExp"
 
 @#$#@#$#@
 ## WHAT IS IT?
