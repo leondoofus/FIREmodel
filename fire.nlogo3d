@@ -394,7 +394,7 @@ to-report select-provider
     let er-explore mean [performance-level] of providers
 
     ;set T initialTemperature * ((99 / 100) ^ (ticks - 1))
-    set T (initialTemperature - (ticks / 500))
+    set T (initialTemperature - (ticks / (rounds-number) ))
     let a1 exp (er-exploit / T)
     let b1 exp (er-explore / T)
     set b1 (a1 + b1)
@@ -499,19 +499,6 @@ to switch-behaviour
 end
 
 
-;;Displays (for debug)
-
-to showRatings
-  foreach ratings [
-    r ->
-    show item 3 r
-  ]
-end
-
-
-
-
-
 ;_________________________ interaction ________________
 
 to interact-with [b]
@@ -538,9 +525,7 @@ to interact-with [b]
 
     if d > radius [
       ;; if outside of the provider’s normal operational, uG degraded linearly
-
       set ug ug-out-of-range ug d radius
-      ;show d
     ]
 
 
@@ -803,7 +788,7 @@ NIL
 0.0
 10.0
 0.0
-10.0
+3.0
 true
 false
 "" ""
