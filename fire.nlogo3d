@@ -556,7 +556,6 @@ to go
   tick
 
 end
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 0
@@ -698,13 +697,13 @@ count consummers
 11
 
 PLOT
-193
-238
-616
-548
+251
+187
+674
+497
 Comparison UG
-NIL
-NIL
+Interaction
+UG
 0.0
 10.0
 -2.0
@@ -740,7 +739,7 @@ H
 H
 0
 50
-5.0
+0.0
 1
 1
 NIL

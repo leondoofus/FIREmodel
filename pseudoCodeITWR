@@ -64,7 +64,7 @@ nBF= 2
 nRL=5
 #Componeent Coeffictient
 wI = 2
-wR=2
+wR = 2
 wW = 1
 wC = 0.5
 #Reliability function parameters
@@ -103,7 +103,8 @@ function setPerformanceLevel(provider):
 
 #Trust value returned for provider b
 #k is the component for which we want the trust value
-function getT(k,a,b): #list au lieu de passer a,b et k on verra
+function getT(k,a,b): #list au lieu de passer a,b et k on verra ->>> need to rewrite the signature of this function as we discuted
+	#old version
 	if(k==Component.IT or k==Component.WR){
 		RList <- RW(a,b,c)
 		if(k==Component.IT):
@@ -115,7 +116,22 @@ function getT(k,a,b): #list au lieu de passer a,b et k on verra
 			weightSum+=weight
 			somme+=weight*r[v]
 
-		return somme/weightSum		
+		return somme/weightSum	
+
+
+	#new version generique, on ajoutera des switches dans le modele qui nous permettent de savoir quels composants sont actifs
+	# T(a,b) = (sum Wk * pTk(a,b) * Tk(a,b)) / (sum Wk * pTk(a,b))
+	somme = 0
+	weightSum = 0
+		#ici il faut que l'agent fire ait 2 listes des providers distinctes dont l'une pour les interations directes et l'autre pour les indirectes (via WR)
+	calcul somme et weightSum comme dessus
+	if (Model.WR = True)
+		rajouter des termes dans somme et weightSum
+	if (Model.CR = True)
+		pareil
+	if (Model.RT = True)
+		pareil
+	return somme/weightSum
 	}
 	
 	
@@ -205,7 +221,7 @@ function selectBestProvider():
 		if( trustValue> bestV):
 			bestV <- trustValue
 			bestP<-p
-
+	############ call function : evaluationProcessWR ([], bestP, nBF, nRL, self.notesForBestP ?) not sure about this
 	return bestP
 
 
