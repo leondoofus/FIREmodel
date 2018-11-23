@@ -2,11 +2,11 @@
 globals [
   shape-size ;; sphere's radius
   ;rounds-number
-  goodP-number
-  ordinaryP-number
-  intermittentP-number
-  badP-number
-  Nc
+  ;goodP-number
+  ;ordinaryP-number
+  ;intermittentP-number
+  ;badP-number
+  ;Nc
   ;;rangeActivityLevel?
   ;H
   lambdaIT
@@ -81,7 +81,7 @@ to setup
   set intermittentP-number 5
   set badP-number 45
 
-  set Nc 500
+  ;set Nc 500
   ;set H 10
   set lambdaIT -5 / ln(0.5)
   set nBF 2
@@ -103,8 +103,8 @@ to setup
   set ORDINARY-DEV 2
   set BAD-DEV 2
   set DEGRADATION 1
-  set UGs-fire [0]
-  set UGs-NoTrust [0]
+  set UGs-fire []
+  set UGs-NoTrust []
   ;set T 100
   set provider-type ["good" "bad" "intermittent" "ordinary"]
   set trust-model ["NoTrust" "IT" "ITWR"]
@@ -215,7 +215,7 @@ end
 
 to-report ug-out-of-range [ug great-d ro]
   ; shape-size / 4 is the minimum ro that can have any agent (1000/4 = 250)
-  ;Do we tahe the distance between the two agents - the operating radius
+  ;Do we take the distance between the two agents - the operating radius
   let maxdiff maxD - ( shape-size / 4 )
 
   ;let new-ug ug - ug * (great-d - ro) / maxdiff
@@ -269,11 +269,6 @@ to-report get-t-value [a b]
   let t-value 0
   let weight-sum 0
   let r-ab get-rates a b
-  if length r-ab = 0 [
-    show "Liste vide"
-    show a
-    show b
-  ]
 
   foreach r-ab [
     r ->
@@ -298,7 +293,7 @@ to-report get-reliability [a b t-value]
 		set weight-sum weight-sum + weight
 		set p-d p-d + weight * abs (item 3 r - t-value)
 	]
-	set p-d 1 - p-d / (2 * weight-sum)
+	set p-d 1 - (p-d / (2 * weight-sum))
 	let pr 1 - exp (-1 * gamma * weight-sum)
 	
   report pr * p-d
@@ -376,7 +371,15 @@ to-report select-provider
 
     let best-p select-best-provider
 
-    let er-exploit get-t-value who best-p
+    ;;er-exploit gets best trust value ([-1;1]
+    let t-value get-t-value who best-p
+    ;let reliab (get-reliability who best-p t-value)
+    ;let er-exploit t-value * reliab
+    let er-exploit t-value
+
+    ;; to ug scale - [-10;10]
+    set er-exploit er-exploit * 10
+
 
     let average-ug 0
     let nb-providers 0
@@ -393,14 +396,25 @@ to-report select-provider
 
     let er-explore mean [performance-level] of providers
 
-    ;set T initialTemperature * ((99 / 100) ^ (ticks - 1))
-    set T (initialTemperature - (ticks / (rounds-number) ))
+    ;if er-exploit > er-explore [show er-exploit
+    ;show er-explore]
+
+
+    ;set T initialTemperature * ((999 / 1000) ^ (ticks))
+
+    set T (initialTemperature * (1 - ((ticks - 1 )/ rounds-number )) )
+    ;set T initialTemperature
+    ;let temp initialTemperature - (0.01 * ticks)
+    ;if temp = 0 [set temp initialTemperature]
+
     let a1 exp (er-exploit / T)
     let b1 exp (er-explore / T)
+
+
     set b1 (a1 + b1)
     let p-exploit (a1 / b1)
     ;;For debug
-    ;set choiceExp lput p-exploit choiceExp
+    set choiceExp lput p-exploit choiceExp
     ;set choiceExp2 lput (2 * a1 - b1) choiceExp
     let r random-float 1.0
 
@@ -525,7 +539,7 @@ to interact-with [b]
 
     if d > radius [
       ;; if outside of the provider’s normal operational, uG degraded linearly
-      set ug ug-out-of-range ug d radius
+      ;set ug ug-out-of-range ug d radius
     ]
 
 
@@ -550,6 +564,9 @@ end
 ;_________________________ main loop ________________
 to go
 
+  set UGs-fire []
+  set UGs-NoTrust []
+
   ask consummers [
 
     ;we don't store too much ratings in local database ( > H )
@@ -558,17 +575,18 @@ to go
     if random-float 1.0 < activity-level [
       let prov select-provider
       interact-with provider prov
+
     ]
 
     ;random-move
   ]
 
+
  ; ask providers [switch-behaviour]
 
   ;random-setup
 
-  if ticks > rounds-number [stop]
-
+  if ticks >= rounds-number [stop]
 
   tick
 
@@ -637,81 +655,15 @@ NIL
 NIL
 0
 
-MONITOR
-119
-52
-182
-97
-GOOD P
-count providers with [p-type = \"good\"]
-17
-1
-11
-
-MONITOR
-117
-104
-219
-149
-BAD providers
-count providers with [p-type = \"bad\"]
-17
-1
-11
-
-MONITOR
-258
-55
-337
-100
-ORDINARY
-count providers with [p-type = \"ordinary\"]
-17
-1
-11
-
-MONITOR
-226
-104
-337
-149
-INTERTMITTENT
-count providers with [p-type = \"intermittent\"]
-17
-1
-11
-
-MONITOR
-198
-43
-248
-88
-total
-count providers
-17
-1
-11
-
 TEXTBOX
 30
 483
 180
 539
-réglable : H , nBF, nRL, degradation, temperature, pourcentage agents, poids des components
+réglable : nBF, nRL, degradation, temperature, pourcentage agents, poids des components
 11
 103.0
 1
-
-MONITOR
-27
-51
-112
-96
-Consumers
-count consummers
-17
-1
-11
 
 PLOT
 251
@@ -733,10 +685,10 @@ PENS
 "Fire" 1.0 0 -14454117 true "" "plot mean UGs-fire"
 
 SLIDER
-39
-184
-211
-217
+321
+47
+493
+80
 rounds-number
 rounds-number
 0
@@ -748,10 +700,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-30
-272
-202
-305
+18
+315
+190
+348
 H
 H
 0
@@ -769,10 +721,10 @@ SLIDER
 386
 initialTemperature
 initialTemperature
-0
-1000
-1.0
-1
+-0.5
+4
+1.96
+0.01
 1
 NIL
 HORIZONTAL
@@ -812,6 +764,81 @@ false
 "" ""
 PENS
 "default" 1.0 0 -16777216 true "" "plot mean choiceExp"
+
+SLIDER
+39
+180
+211
+213
+Nc
+Nc
+0
+500
+500.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+38
+104
+210
+137
+goodP-number
+goodP-number
+0
+100
+10.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+40
+30
+212
+63
+ordinaryP-number
+ordinaryP-number
+0
+100
+40.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+38
+142
+226
+175
+intermittentP-number
+intermittentP-number
+0
+100
+5.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+38
+67
+210
+100
+badP-number
+badP-number
+0
+100
+45.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?

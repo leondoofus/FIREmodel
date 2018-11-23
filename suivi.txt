@@ -41,3 +41,9 @@ J'ai tout mis en commentaire parce que on en a pas besoin pour cette partie.
 	On a bien er-exploit petit au début et augmente
 			et er-explore est statique ( car on prend tous les providers du monde. 
 			Il faut peut être prendre juste les providers qu'il connaît - pas logique)
+
+23.11.18
+• liste ugs vidés à chaque rounds
+• Suppression temporaire de la diminution de l'ug si hors du rayon d'opération
+• Ajout de sliders poru les agents
+• T doit être compris entre 1.02 et 1.60 environ
