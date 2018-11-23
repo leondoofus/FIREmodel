@@ -34,6 +34,7 @@ globals [
   maxAngD
   ;;Max distance that can have two agents
   maxD
+  meanD
 
   ;; to plot decision between exploit and explore
   choiceExp
@@ -75,6 +76,7 @@ to setup
   clear-all
   ;;setup all statics variables
   set shape-size 1000.0
+  ;set shape-size 100.0
   ;set rounds-number 500
   set goodP-number 10
   set ordinaryP-number 40
@@ -120,7 +122,8 @@ to setup
   set cptP 0
   ;;Setting the maximum distance that can separate two agents
   ;;(for decreasing UG when out of range)
-  set maxD great-distance 0 0 0 0 0 shape-size * 2
+
+  ;set maxD great-distance 1 1 shape-size 1 1 -1 * shape-size
   set choiceExp [0]
   set choiceExp2 [0]
 
@@ -133,8 +136,30 @@ to setup
   add-provider intermittentP-number "intermittent"
 
 
+  set maxD 0
+  set meanD 0
+  let i 0
+  ask turtles [
+    let x x-pos
+    let y y-pos
+    let z z-pos
+
+    ask consummers [
+      let d great-distance x-pos y-pos z-pos x y z
+      if d > maxD [set maxD d]
+      set i i + 1
+      set meanD meanD + d
+    ]
+  ]
+
+  set meanD meanD / i
+
+
+
   reset-ticks
 end
+
+
 
 to add-consumer [number tmodel]
   create-consummers number
@@ -145,7 +170,9 @@ to add-consumer [number tmodel]
       [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
       [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
     setxyz x-pos y-pos z-pos
-    set radius shape-size * vary 0.1 0.2
+    ;set radius shape-size * vary 0.1 0.2
+    ;set radius shape-size * vary 0.25 0.5
+    set radius shape-size * vary 5 7
     set color violet
     set activity-level vary 0.25 1.00
     set ratings []
@@ -167,11 +194,10 @@ to add-provider [number ptype]
       [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
     setxyz x-pos y-pos z-pos
     ;;set radius shape-size * vary 0.1 0.2
-    set radius shape-size * vary 0.25 0.5
+    ;set radius shape-size * vary 0.25 0.5
+    set radius shape-size * vary 5 7
     set received-ratings []
     setup-provider-type ptype
-
-
   ]
 end
 
@@ -209,18 +235,34 @@ to-report vary [ #min #max ]  ; random float in given range
 end
 
 to-report great-distance [x1 y1 z1 x2 y2 z2]
-  let dotproduct (x1 * x2 + y2 * y2 + z1 * z2)/(shape-size ^ 2) ; normalized
-  report acos(dotproduct) * shape-size
+  ; y1 * y1 ? ^^
+  ;let dotproduct (x1 * x2 + y1 * y1 + z1 * z2)/(shape-size ^ 2) ; normalized
+  ;report acos(dotproduct) * shape-size
+
+  ;; Jehyankaa
+  let latlong get-lat-long x1 y1 z1
+  let latlong2 get-lat-long x2 y2 z2
+  let lat1 item 0 latlong
+  let lat2 item 0 latlong2
+  let lon1 item 1 latlong
+  let lon2 item 1 latlong2
+
+  let D  (sin ( (lat2 - lat1) / 2) ) ^ 2 + ( cos lat1 * cos lat2 * (sin ((lon2 - lon1) / 2) ) ^ 2 )
+  set D 2 * shape-size * asin (sqrt D)
+  report D
 end
 
-to-report ug-out-of-range [ug great-d ro]
-  ; shape-size / 4 is the minimum ro that can have any agent (1000/4 = 250)
+
+to-report ug-out-of-range [ug great-d]
+  ; shape-size * 5 is the minimum ro that can have any agent (1000 * 5 = 5000)
   ;Do we take the distance between the two agents - the operating radius
-  let maxdiff maxD - ( shape-size / 4 )
+  let maxdiff maxD - ( shape-size * 5 )
 
   ;let new-ug ug - ug * (great-d - ro) / maxdiff
   ;;Or just the distance ?
-  let new-ug ug - ug * great-d / maxdiff
+  ;let new-ug ug - ug * great-d / maxdiff
+  let new-ug (ug - (abs ug * great-d / (maxD * 4) ) ) ;; si on met maxD * 8 Meilleurs résultats mais ça doit pas ê la solution
+
   if new-ug < -10 [set new-ug -10]
   if new-ug > 10 [set new-ug 10]
 
@@ -242,6 +284,11 @@ to-report to-cartesian [r theta phi]
   report (list x y z)
 end
 
+to-report get-lat-long [x y z]
+  let lat asin (z / shape-size)
+  let lon atan y x
+  report (list lat lon)
+end
 ;_________________________ set rating & trust value ________________
 to-report get-rates [a b]
   let r-ab []
@@ -310,7 +357,23 @@ to delete-old-ratings
 end
 
 
-;_________________________ provider selection________________
+;_________________________ agents selection________________
+
+;get neighbours of a provider
+to-report get-neighbours
+  let neighbours []
+  let x x-pos
+  let y y-pos
+  let z z-pos
+  let r radius
+
+  ask consummers [
+    let d great-distance x y z x-pos y-pos z-pos
+    if (d < r) [ set neighbours lput who neighbours ]
+  ]
+  report neighbours
+end
+
 to-report select-random-provider ;[x y z r]
   ;let provs []
   ;ask providers
@@ -396,13 +459,16 @@ to-report select-provider
 
     let er-explore mean [performance-level] of providers
 
+    set er-explore ug-out-of-range er-explore meanD
+
     ;if er-exploit > er-explore [show er-exploit
     ;show er-explore]
 
 
     ;set T initialTemperature * ((999 / 1000) ^ (ticks))
 
-    set T (initialTemperature * (1 - ((ticks - 1 )/ rounds-number )) )
+
+    set T (initialTemperature * (1 - ((ticks)/ (rounds-number) )) )
     ;set T initialTemperature
     ;let temp initialTemperature - (0.01 * ticks)
     ;if temp = 0 [set temp initialTemperature]
@@ -539,7 +605,7 @@ to interact-with [b]
 
     if d > radius [
       ;; if outside of the provider’s normal operational, uG degraded linearly
-      ;set ug ug-out-of-range ug d radius
+      set ug ug-out-of-range ug d
     ]
 
 
@@ -674,11 +740,11 @@ Comparison UG
 Interaction
 UG
 0.0
-10.0
+100.0
 -2.0
-2.0
+5.0
 true
-false
+true
 "" ""
 PENS
 "noTrust" 1.0 0 -2674135 true "" "plot mean UGs-NoTrust "
@@ -723,7 +789,7 @@ initialTemperature
 initialTemperature
 -0.5
 4
-1.96
+1.08
 0.01
 1
 NIL
@@ -763,7 +829,7 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plot mean choiceExp"
+"default" 1.0 0 -16777216 true "" "plot 1 - mean choiceExp"
 
 SLIDER
 39

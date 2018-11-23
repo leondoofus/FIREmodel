@@ -32,4 +32,32 @@ x = r * sin (theta) * cos (phi)
 y = r * sin (theta) * sin (phi)
 z= r * cos (theta)
 
+# Conversion from cartesian to longitude latitude
+https://sciencing.com/convert-xy-coordinates-longitude-latitude-8449009.html
+https://stackoverflow.com/questions/1185408/converting-from-longitude-latitude-to-cartesian-coordinates
+lat = asin(z / R)
+lon = atan2(y, x)
 
+#Great circle distance calucl
+https://fr.wikipedia.org/wiki/Distance_du_grand_cercle
+
+
+
+## To draw circles around providers (add at the end of setup)
+let p-details []
+  ask providers [
+    set p-details lput (list x-pos y-pos z-pos radius) p-details
+  ]
+  foreach p-details [
+    x ->
+    create-turtles 1 [
+      setxyz item 0 x item 1 x item 2 x
+      
+      set size (item 3 x / 100)
+      set shape "circle 2"
+      set color white
+      stamp 
+      die
+      
+    ]
+  ]

@@ -47,3 +47,7 @@ J'ai tout mis en commentaire parce que on en a pas besoin pour cette partie.
 • Suppression temporaire de la diminution de l'ug si hors du rayon d'opération
 • Ajout de sliders poru les agents
 • T doit être compris entre 1.02 et 1.60 environ
+
+• Correction du calcul de distance (great circle distance)
+• Prise en compte de l'éloignement quand calcul des expected result
+• Plusieurs tests pour calibrer les paramètres
