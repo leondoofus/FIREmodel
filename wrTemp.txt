@@ -147,7 +147,7 @@ def evaluationProcessWR(provider):
 		ask firstnBFacquaintances 
 			acquaintances.remove(self)
 			if matchingRatingsFound :
-				ratingsList.append (ratings])
+				ratingsList.append (ratings)
 				#If he had an interaction he is a witness
 				witnessNb ++
 			else
