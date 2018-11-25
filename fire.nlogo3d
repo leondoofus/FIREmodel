@@ -180,7 +180,6 @@ to add-consumer [number tmodel]
     set no-trust-value []
     set known-providers []
     set T initialTemperature
-
   ]
 end
 
@@ -466,9 +465,12 @@ to-report select-provider
     ;show er-explore]
 
 
-    ;set T initialTemperature * ((999 / 1000) ^ (ticks))
+    set T initialTemperature * ((999 / 1000) ^ (ticks))
     ;set T T / 2
-    set T T - 0.00015
+    ;set T T - 0.00015
+    if T <= 0 [
+      print "wooooooooo" ;never reach to this statement
+      set T 0.00015]
     ;;TODO Handle when T = 0
     ;set T T - (1 / (rounds-number))
     ;set T initialTemperature
@@ -750,7 +752,7 @@ true
 "" ""
 PENS
 "noTrust" 1.0 0 -2674135 true "" "plot mean UGs-NoTrust "
-"Fire" 1.0 0 -14454117 true "" "plot mean UGs-fire"
+"CONTROL (FIRE-IT)" 1.0 0 -14454117 true "" "plot mean UGs-fire"
 
 SLIDER
 321
@@ -768,10 +770,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-18
-315
-190
-348
+41
+225
+213
+258
 H
 H
 0
@@ -783,10 +785,10 @@ NIL
 HORIZONTAL
 
 PLOT
-749
-351
-949
-501
+705
+288
+905
+438
 Temperature (choice explore-exploit)
 NIL
 NIL
@@ -801,10 +803,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot mean [T] of consummers"
 
 PLOT
-880
-132
-1080
-282
+702
+121
+902
+271
 exploit vs explore
 NIL
 NIL
@@ -894,10 +896,10 @@ NIL
 HORIZONTAL
 
 INPUTBOX
-647
-52
-707
-112
+438
+95
+498
+155
 initialTemperature
 1.0
 1

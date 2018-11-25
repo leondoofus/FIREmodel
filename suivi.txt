@@ -51,3 +51,8 @@ J'ai tout mis en commentaire parce que on en a pas besoin pour cette partie.
 • Correction du calcul de distance (great circle distance)
 • Prise en compte de l'éloignement quand calcul des expected result
 • Plusieurs tests pour calibrer les paramètres
+
+25.11.18
+• Fixed T=0.00015 when T <= 0 but this statement is never reached even though we used T -= 0.00015
+• *cri de joie* Enfin, atteint 4.xx IT en utilisant T = initialTemperature * ((999 / 1000) ^ (ticks))
+• Donc si on fixe initT = 1 la fonction devient croissante ?!
