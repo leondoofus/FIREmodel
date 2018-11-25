@@ -1,74 +1,76 @@
-
-
-
-
-# <------------- GLOBALS ------------->
-UGs_fire=list()
-UGs_NoTModel=list()
-interactionRounds # ticks
-
-#Self-Defined parameters
-T=100 #Temperature parameter (will decrease with time) for the choice between exploit & explore #A REGLER
-
+# Only to add WR component 
+# To do : how to combine both components ? 
+# Which weight do we give  ? When do we set the evaluation process ?
+# What if we already have ratings n our local database ?
 
 # <------------- FUNCTIONS ------------->
-
-#Trust value returned for provider b
-#k is the component for which we want the trust value
-function getT(k,a,b): #list au lieu de passer a,b et k on verra ->>> need to rewrite the signature of this function as we discuted
-	#old version
-	if(k==Component.IT or k==Component.WR){
-		RList <- RW(a,b,c)
-		if(k==Component.IT):
-			RList <- RI(a,b,c)
-		somme=0
-		weightSum=0
-		foreach r dans R(a,b,c):
-			weight=(exp(-1*this.tick-r[i])/lambdaIT)
-			weightSum+=weight
-			somme+=weight*r[v]
-
-		return somme/weightSum	
-
-
-	#new version generique, on ajoutera des switches dans le modele qui nous permettent de savoir quels composants sont actifs
-	# T(a,b) = (sum Wk * pTk(a,b) * Tk(a,b)) / (sum Wk * pTk(a,b))
-	somme = 0
+def getT(a,b):
 	weightSum = 0
-		#ici il faut que l'agent fire ait 2 listes des providers distinctes dont l'une pour les interations directes et l'autre pour les indirectes (via WR)
-	calcul somme et weightSum comme dessus
-	if (Model.WR = True)
-		rajouter des termes dans somme et weightSum
-	if (Model.CR = True)
-		pareil
-	if (Model.RT = True)
-		pareil
-	return somme/weightSum
-	}
-	
-	
+	T = 0
+	for each Componentk
+		Tk=getTrustValue(k,Rab)
+		w = getComponentCoef (k)  * getReliability (k,Rab,Tk)
+		T += w*Tk
+		weightSum +=w
+	T /= weightSum
+
+	return T
+
+
+def getTk(k,Rab):
+	somme=0
+	weightSum=0
+	foreach r dans Rab:
+		weight=getWeight(k,r)
+		weightSum+=weight
+		somme+=weight*r[v]
+
+	return somme/weightSum	
+
+def getWeight(K,r):
+	if(k==Component.IT or k==Component.WR):
+		return (exp(-1*this.tick-r[i])/lambdaIT)
+
+
+
 
 #Reliability for trust value
-function getReliability(a,b,TI):
-	gamma =gammaI
+def getReliability(k,Rab,Tk):
+	if(k==Component.IT):
+		gamma =gammaI
+		RList <- RI(a,b,c)
+	if(k==Component.WR):
+		gamma = gammaWR
+		RList <- RW(a,b,c)
+	if(k==Component.CR):
+		gamma=gammaCR
+		RList <- RC(a,b,c)
 	
 	pD=0
-	lambda=-5/ln(0.5)
+
 	weightSum=0
 	foreach r dans R(a,b,c):
-		weight=(exp(-1*this.tick-r[i])/lambda)
+		weight=getWeight(k,r)
 		weightSum+=weight
-		pD+= weight * abs (r[v] - TI)
+		pD+= weight * abs (r[v] - Tk)
 	
 	pD = 1 - pD/(2*weightSum)
 	pR=1-exp(-1*gamma*weightSum)
 	return pR*pD
 
 
+def hasRatings(p) :
+
+
+	wRatings = evaluationProcessWR(p)
+	ratings.append(wRatings)
+
+	if ratings.contains(p):
+		return True
 
 ## select provider 
 
-function searchProvider:
+def searchProvider:
 
 	## without a trustModel we select randomly
 	if modele == NoTrust:
@@ -78,7 +80,7 @@ function searchProvider:
 	if modele == FIRE:
 		#Separate known and unknown providers
 		foreach providers p:
-			if (getRatingFor(p) == empty):
+			if (not hasRatings(p)):
 				noTrustValue <- p
 			else
 				hasTrustValue <- p
@@ -92,7 +94,7 @@ function searchProvider:
 		# store the best known provider
 		bestP <- selectBestProvider()
 		#expected performance value from this best provider
-		ER_a1 <- getTI(self,bestP)
+		ER_a1 <- getT(self,bestP)
 
 		averageUG=0
 		foreach provider p:
@@ -118,11 +120,11 @@ function searchProvider:
 
 
 # Choose best provider by selecting max of trust values
-function selectBestProvider():
+def selectBestProvider():
 	bestV=-1000
 	bestP=None
 	foreach p in hasTrustValue:
-		trustValue=getTI(self,p)
+		trustValue=getT(self,p)
 		if( trustValue> bestV):
 			bestV <- trustValue
 			bestP<-p
@@ -130,7 +132,7 @@ function selectBestProvider():
 	return bestP
 
 
-function evaluationProcessWR:
+def evaluationProcessWR(provider):
 	chain=0
 	witnessNb=0
 	ratingsList= []
@@ -146,7 +148,7 @@ function evaluationProcessWR:
 			acquaintances.remove(self)
 			if matchingRatingsFound :
 				ratingsList.append (ratings])
-				//If he had an interaction he is a witness
+				#If he had an interaction he is a witness
 				witnessNb ++
 			else
 				acquaintances.append (listOFnewAcquaintances)
