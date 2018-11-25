@@ -60,7 +60,6 @@ consummers-own [
 	has-trust-value ;;list
 	no-trust-value ;; list
   T ;; temperature
-  known-providers;;list
 
 ]
 
@@ -75,15 +74,11 @@ to setup
   clear-all
   ;;setup all statics variables
   set shape-size 1000.0
-  ;set shape-size 100.0
-  ;set rounds-number 500
   set goodP-number 10
   set ordinaryP-number 40
   set intermittentP-number 5
   set badP-number 45
 
-  ;set Nc 500
-  ;set H 10
   set lambdaIT -5 / ln(0.5)
   set nBF 2
   set nRL 5
@@ -106,7 +101,6 @@ to setup
   set DEGRADATION 1
   set UGs-fire []
   set UGs-NoTrust []
-  ;set T 100
   set provider-type ["good" "bad" "intermittent" "ordinary"]
   set trust-model ["NoTrust" "IT" "ITWR"]
   set component ["IT" "WR" "CR"]
@@ -119,10 +113,7 @@ to setup
   set pProfileSwitch 0.02
   set maxAngD pi / 20
   set cptP 0
-  ;;Setting the maximum distance that can separate two agents
-  ;;(for decreasing UG when out of range)
 
-  ;set maxD great-distance 1 1 shape-size 1 1 -1 * shape-size
   set choiceExp [0]
   set choiceExp2 [0]
 
@@ -134,7 +125,8 @@ to setup
   add-provider badP-number "bad"
   add-provider intermittentP-number "intermittent"
 
-
+  ;;Setting the maximum (and mean) distance that can separate two agents
+  ;;(for decreasing UG when out of range)
   set maxD 0
   set meanD 0
   let i 0
@@ -150,9 +142,7 @@ to setup
       set meanD meanD + d
     ]
   ]
-
   set meanD meanD / i
-
 
 
   reset-ticks
@@ -170,7 +160,6 @@ to add-consumer [number tmodel]
       [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
     setxyz x-pos y-pos z-pos
     ;set radius shape-size * vary 0.1 0.2
-    ;set radius shape-size * vary 0.25 0.5
     set radius shape-size * vary 5 7
     set color violet
     set activity-level vary 0.25 1.00
@@ -178,7 +167,6 @@ to add-consumer [number tmodel]
     set t-model tmodel
     set has-trust-value []
     set no-trust-value []
-    set known-providers []
     set T initialTemperature
   ]
 end
@@ -193,7 +181,6 @@ to add-provider [number ptype]
       [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
     setxyz x-pos y-pos z-pos
     ;;set radius shape-size * vary 0.1 0.2
-    ;set radius shape-size * vary 0.25 0.5
     set radius shape-size * vary 5 7
     set received-ratings []
 
@@ -436,8 +423,6 @@ to-report select-provider
 
     ;;er-exploit gets best trust value ([-1;1]
     let t-value get-t-value who best-p
-    ;let reliab (get-reliability who best-p t-value)
-    ;let er-exploit t-value * reliab
     let er-exploit t-value
 
     ;; to ug scale - [-10;10]
@@ -448,35 +433,19 @@ to-report select-provider
     let nb-providers 0
     let average-ugs []
 
-    ;foreach known-providers[
-      ;x ->
-      ;let intervalle get-type-properties p-type
-      ;let x mean item 0 intervalle item 1 intervalle
-      ;ask provider x [set average-ugs lput performance-level average-ugs]
-    ;]
-
-    ;let er-explore mean average-ugs
-
     let er-explore mean [performance-level] of providers
 
     set er-explore ug-out-of-range er-explore meanD
 
-    ;if er-exploit > er-explore [show er-exploit
-    ;show er-explore]
-
-
-    set T initialTemperature * ((999 / 1000) ^ (ticks))
+    ;set T initialTemperature * ((999 / 1000) ^ (ticks))
     ;set T T / 2
-    ;set T T - 0.00015
+    ;set T T - (1 / (rounds-number))
+    set T T - 0.00015
     if T <= 0 [
       print "wooooooooo" ;never reach to this statement
       set T 0.00015]
-    ;;TODO Handle when T = 0
-    ;set T T - (1 / (rounds-number))
-    ;set T initialTemperature
-    ;let temp initialTemperature - (0.01 * ticks)
-    ;if temp = 0 [set temp initialTemperature]
-    ;if ticks > 30 [show er-exploit]
+
+
     let a1 exp (er-exploit / T)
     let b1 exp (er-explore / T)
 
@@ -623,7 +592,6 @@ to interact-with [b]
   let r-value ug / 10
 
   ;store
-  set known-providers lput provider-id known-providers
   set ratings lput (list who provider-id ticks r-value) ratings
   ask b [ set received-ratings lput (list who ticks r-value) received-ratings ]
 
