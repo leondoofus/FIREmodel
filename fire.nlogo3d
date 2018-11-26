@@ -221,7 +221,8 @@ to-report vary [ #min #max ]  ; random float in given range
 end
 
 to-report great-distance [x1 y1 z1 x2 y2 z2]
-  ;let dotproduct (x1 * x2 + y1 * y2 + z1 * z2)/(shape-size ^ 2) ; normalized
+  ; y1 * y1 ? ^^
+  ;let dotproduct (x1 * x2 + y1 * y1 + z1 * z2)/(shape-size ^ 2) ; normalized
   ;report acos(dotproduct) * shape-size
 
   ;; Jehyankaa
@@ -274,7 +275,6 @@ to-report get-lat-long [x y z]
   let lon atan y x
   report (list lat lon)
 end
-
 ;_________________________ set rating & trust value ________________
 to-report get-rates [a b]
   let r-ab []
@@ -333,7 +333,7 @@ end
 ;end
 
 to-report get-weight [k r]
-  if ((k = "IT") or (k="WR")) [
+  if ((k = "IT") or (k = "WR")) [
     report exp(-1 * (ticks - item 2 r)) / lambdaIT
   ]
   report 0
@@ -411,35 +411,6 @@ to delete-old-ratings
 end
 
 
-to-report collect-ratings-neibours [list-neighbours-asked a b depth width res]
-  ifelse depth <= 0
-  [ifelse member? b list-neighbours-asked
-    [report res] ;b was asked before]
-    [foreach get-rates a b
-      [x -> set res lput x res]
-      report res]]
-  [foreach get-rates a b
-      [x -> set res lput x res]
-   set list-neighbours-asked lput b list-neighbours-asked
-   let neighbours []
-   foreach get-neighbours ;;Idk how to get neighbours of a
-    [x ->
-      if not member? x list-neighbours-asked
-      [set neighbours lput x neighbours]
-    ]
-    let i 0
-    while [empty? neighbours or i = width]
-    [
-      let n one-of neighbours
-      set neighbours remove n neighbours
-      set list-neighbours-asked lput n list-neighbours-asked
-      set res collect-ratings-neibours list-neighbours-asked n b (depth - 1) width res
-      set i i + 1
-    ]
-    report res
-  ]
-end
-
 ;_________________________ agents selection________________
 
 ;get neighbours of a provider
@@ -449,9 +420,10 @@ to-report get-neighbours
   let y y-pos
   let z z-pos
   let r radius
+
   ask consummers [
     let d great-distance x y z x-pos y-pos z-pos
-    if (d <= r) [ set neighbours lput who neighbours ]
+    if (d < r) [ set neighbours lput who neighbours ]
   ]
   report neighbours
 end
@@ -532,10 +504,13 @@ to-report select-provider
 
     set er-explore ug-out-of-range er-explore meanD
 
-    ;set T initialTemperature * ((999 / 1000) ^ (ticks))
-    ;set T T / 2
-    set T T - (1 / (rounds-number * 10))
-    ;set T T - 0.00015
+    let alpha (999 / 1000)
+    ;let alpha (( 10 * rounds-number - 1) / (10 * rounds-number))
+
+    set T initialTemperature * (alpha ^ (ticks))
+    ;set T T - (1 / (rounds-number * 10))
+    ;set T initialTemperature - (ticks * 0.00015)
+
     if T <= 0 [
       ;never reach to this statement
       set T 0.00015]
