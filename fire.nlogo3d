@@ -34,7 +34,6 @@ globals [
   ;;Max distance that can have two agents
   maxD
   meanD
-
   ;; to plot decision between exploit and explore
   choiceExp
   choiceExp2
@@ -298,6 +297,74 @@ to-report has-ratings? [x]
   report false
 end
 
+;;;General t-value (with all components)
+;to-report get-t-value [k a]
+;  let t-value 0
+;  let weight-sum 0
+;  foreach component [
+;    k ->
+;    let tk get-t-value-by-component k a b
+;    let w ( get-component-coef k * get-reliability k a b tk )
+;    set t-value (t-value + w * tk)
+;    set weight-sum weight-sum + w
+;  ]
+;
+;  set t-value (t-value / weight-sum)
+;  report t-value
+;end
+;
+;
+;;;T-value for the component k from the list r-ab
+;to-report get-t-value-by-component [k a b]
+;  let r-ab []
+;  if k = "IT" [set r-ab get-rates a b]
+;  if k = "WR" [set r-ab get-rates null b]
+;  let t-value 0
+;  let weight-sum 0
+;  foreach r-ab [
+;    r ->
+;    let weight get-weight(k, r)
+;
+;		set weight-sum (weight-sum + weight)
+;		set t-value t-value + (weight * item 3 r)
+;  ]
+;  set t-value (t-value / weight-sum)
+;  report t-value
+;end
+
+to-report get-weight [k r]
+  if ((k = "IT") or (k="WR")) [
+    report exp(-1 * (ticks - item 2 r)) / lambdaIT
+  ]
+  report 0
+end
+
+;to-report get-reliability [k r-ab t-value]
+;
+;  if(k==Component.IT):
+;		gamma =gammaI
+;		RList <- RI(a,b,c)
+;	if(k==Component.WR):
+;		gamma = gammaWR
+;		RList <- RW(a,b,c)
+;	if(k==Component.CR):
+;		gamma=gammaCR
+;		RList <- RC(a,b,c)
+;  if k = "WR" [set gamme gammeWR]
+;  if k = "CR" [set gamme gammeCR]
+;  let p-d 0
+;	let weight-sum 0
+;	foreach r-ab [
+;    r ->
+;		let weight get-weight k r
+;		set weight-sum weight-sum + weight
+;		set p-d p-d + weight * abs (item 3 r - t-value)
+;	]
+;	set p-d 1 - (p-d / (2 * weight-sum))
+;	let pr 1 - exp (-1 * gamma * weight-sum)
+;	
+;  report pr * p-d
+;end
 
 to-report get-t-value [a b]
   let t-value 0
@@ -439,10 +506,10 @@ to-report select-provider
 
     ;set T initialTemperature * ((999 / 1000) ^ (ticks))
     ;set T T / 2
-    ;set T T - (1 / (rounds-number))
-    set T T - 0.00015
+    set T T - (1 / (rounds-number * 10))
+    ;set T T - 0.00015
     if T <= 0 [
-      print "wooooooooo" ;never reach to this statement
+      ;never reach to this statement
       set T 0.00015]
 
 
@@ -616,13 +683,12 @@ to go
 
     ]
 
-    ;random-move
+    if dynamism-moves [random-move]
   ]
 
+  if dynamism-behaviours [ ask providers [switch-behaviour] ]
 
- ; ask providers [switch-behaviour]
-
-  ;random-setup
+  if dynamism-setup [random-setup]
 
   if ticks >= rounds-number [stop]
 
@@ -873,6 +939,39 @@ initialTemperature
 1
 0
 Number
+
+SWITCH
+40
+313
+207
+346
+dynamism-moves
+dynamism-moves
+1
+1
+-1000
+
+SWITCH
+41
+358
+237
+391
+dynamism-behaviours
+dynamism-behaviours
+1
+1
+-1000
+
+SWITCH
+40
+268
+202
+301
+dynamism-setup
+dynamism-setup
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
