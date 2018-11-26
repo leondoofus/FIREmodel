@@ -277,6 +277,8 @@ to-report get-lat-long [x y z]
   report (list lat lon)
 end
 ;_________________________ set rating & trust value ________________
+
+;;There is a difference between getting his own rates (direct interaction where a=who) and others (witnesses where a !=who)
 to-report get-rates [a b]
   let r-ab []
   foreach ratings [
@@ -340,20 +342,19 @@ to-report get-weight [k r]
   report 0
 end
 
-;to-report get-reliability [k r-ab t-value]
+;to-report get-reliability [k t-value]
 ;
-;  if(k==Component.IT):
-;		gamma =gammaI
-;		RList <- RI(a,b,c)
+; if(k==Component.IT):
+;		set gamma gammaI
+;		set r-ab get-rates who b
 ;	if(k==Component.WR):
-;		gamma = gammaWR
-;		RList <- RW(a,b,c)
+;		set gamma gammaWR
+;		set r-ab get-rates any b
 ;	if(k==Component.CR):
-;		gamma=gammaCR
-;		RList <- RC(a,b,c)
-;  if k = "WR" [set gamme gammeWR]
-;  if k = "CR" [set gamme gammeCR]
-;  let p-d 0
+;		set gamma gammaCR
+;		;set r-ab get-rates
+;
+; let p-d 0
 ;	let weight-sum 0
 ;	foreach r-ab [
 ;    r ->
@@ -419,6 +420,7 @@ to-report collect-ratings-neighbours [list-neighbours-asked a b depth width res]
     [foreach get-rates a b
       [x -> set res lput x res]
       report res]]
+
   [foreach get-rates a b
       [x -> set res lput x res]
    set list-neighbours-asked lput b list-neighbours-asked
@@ -434,7 +436,7 @@ to-report collect-ratings-neighbours [list-neighbours-asked a b depth width res]
       let n one-of neighbours
       set neighbours remove n neighbours
       set list-neighbours-asked lput n list-neighbours-asked
-      set res collect-ratings-neibours list-neighbours-asked n b (depth - 1) width res
+      set res collect-ratings-neighbours list-neighbours-asked n b (depth - 1) width res
       set i i + 1
     ]
     report res
@@ -831,7 +833,7 @@ rounds-number
 rounds-number
 0
 500
-500.0
+0.0
 1
 1
 NIL
@@ -846,7 +848,7 @@ H
 H
 0
 50
-10.0
+0.0
 1
 1
 NIL
@@ -897,7 +899,7 @@ Nc
 Nc
 0
 500
-500.0
+0.0
 1
 1
 NIL
@@ -912,7 +914,7 @@ goodP-number
 goodP-number
 0
 100
-10.0
+0.0
 1
 1
 NIL
@@ -927,7 +929,7 @@ ordinaryP-number
 ordinaryP-number
 0
 100
-40.0
+0.0
 1
 1
 NIL
@@ -942,7 +944,7 @@ intermittentP-number
 intermittentP-number
 0
 100
-5.0
+0.0
 1
 1
 NIL
@@ -957,7 +959,7 @@ badP-number
 badP-number
 0
 100
-45.0
+0.0
 1
 1
 NIL
@@ -969,7 +971,7 @@ INPUTBOX
 498
 155
 initialTemperature
-1.0
+0.0
 1
 0
 Number

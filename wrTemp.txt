@@ -61,7 +61,8 @@ def getReliability(k,Rab,Tk):
 
 def hasRatings(p) :
 
-
+	# Attention : quand on nous demande une note 
+	# -> Fournir suelement intéractions directs ?
 	wRatings = evaluationProcessWR(p)
 	ratings.append(wRatings)
 
@@ -142,7 +143,7 @@ def evaluationProcessWR(provider):
 	while nbAcquaintances < nbF : 
 		acquaintances +=choose nextNearestConsumer
 
-	while (witnessNb < nBF and chain<nRL)
+	while (witnessNb < nBF and chain < nRL)
 		chain ++
 		ask firstnBFacquaintances 
 			acquaintances.remove(self)
