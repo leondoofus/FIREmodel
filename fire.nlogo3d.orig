@@ -298,6 +298,7 @@ to-report has-ratings? [x]
   report false
 end
 
+<<<<<<< HEAD
 ;;;General t-value (with all components)
 ;to-report get-t-value [k a]
 ;  let t-value 0
@@ -366,6 +367,8 @@ end
 ;	
 ;  report pr * p-d
 ;end
+=======
+>>>>>>> c3b4fb1bd8859678d2bd66c01a33f07b83be1ea8
 
 to-report get-t-value [a b]
   let t-value 0
@@ -412,6 +415,8 @@ to delete-old-ratings
 end
 
 
+<<<<<<< HEAD
+=======
 to-report collect-ratings-neighbours [list-neighbours-asked a b depth width res]
   ifelse depth <= 0
   [ifelse member? b list-neighbours-asked
@@ -441,6 +446,7 @@ to-report collect-ratings-neighbours [list-neighbours-asked a b depth width res]
   ]
 end
 
+>>>>>>> c3b4fb1bd8859678d2bd66c01a33f07b83be1ea8
 ;_________________________ agents selection________________
 
 ;get neighbours of a provider
@@ -534,6 +540,7 @@ to-report select-provider
 
     set er-explore ug-out-of-range er-explore meanD
 
+<<<<<<< HEAD
     let alpha (999 / 1000)
     ;let alpha (( 10 * rounds-number - 1) / (10 * rounds-number))
 
@@ -541,6 +548,12 @@ to-report select-provider
     ;set T T - (1 / (rounds-number * 10))
     ;set T initialTemperature - (ticks * 0.00015)
 
+=======
+    ;set T initialTemperature * ((999 / 1000) ^ (ticks))
+    ;set T T / 2
+    ;set T T - (1 / (rounds-number))
+    set T T - 0.00015
+>>>>>>> c3b4fb1bd8859678d2bd66c01a33f07b83be1ea8
     if T <= 0 [
       print "wooooooooo" ;never reach to this statement
       set T 0.00015]
