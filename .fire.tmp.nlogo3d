@@ -297,10 +297,8 @@ to-report get-acquaintances-neighbours [b]
   ]
   set neighbours reverse sort-with [ l -> item 1 l ] neighbours
   set neighbours sublist neighbours 0 nBF
-  let res []
-  foreach neighbours
-  [n -> set res lput item 0 n res]
-  report res
+  l
+  report 0
 end
 
 ;_________________________ set rating & trust value ________________
