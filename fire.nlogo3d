@@ -17,8 +17,10 @@ globals [
   PL-PERFECT PL-GOOD PL-OK PL-BAD PL-WORST
   GOOD-DEV ORDINARY-DEV BAD-DEV
   DEGRADATION
-  UGs-fire
+  UGs-IT
   UGs-NoTrust
+  UGs-ITWR
+  UGs-ITWRCR
   provider-type
   trust-model
   component
@@ -56,7 +58,7 @@ consummers-own [
 	ratings ;; list
   ;rates will be list like this [a,b,i,v] where a:consumer b:provider
   ; i:interactionNb and v is the value of the rate
-	t-model ;; can be "IT" or "NoTrust" for now
+	t-model ;; can be "IT" , "ITWR" or "NoTrust" for now
 	has-trust-value ;;list
 	no-trust-value ;; list
   T ;; temperature
@@ -74,11 +76,11 @@ to setup
   clear-all
   ;;setup all statics variables
   set shape-size 1000.0
-  set goodP-number 10
-  set ordinaryP-number 40
-  set intermittentP-number 5
-  set badP-number 45
-
+  ;set goodP-number 10
+  ;set ordinaryP-number 40
+  ;set intermittentP-number 5
+  ;set badP-number 45
+  set H 10
   set lambdaIT -5 / ln(0.5)
   set nBF 2
   set nRL 5
@@ -99,7 +101,9 @@ to setup
   set ORDINARY-DEV 2
   set BAD-DEV 2
   set DEGRADATION 1
-  set UGs-fire []
+  set UGs-IT []
+  set UGs-ITWR []
+  set UGs-ITWRCR []
   set UGs-NoTrust []
   set provider-type ["good" "bad" "intermittent" "ordinary"]
   set trust-model ["NoTrust" "IT" "ITWR"]
@@ -113,12 +117,13 @@ to setup
   set pProfileSwitch 0.02
   set maxAngD pi / 20
   set cptP 0
-
+  ;set Nc 500
   set choiceExp [0]
   set choiceExp2 [0]
 
   add-consumer Nc "NoTrust"
   add-consumer Nc "IT"
+  add-consumer Nc "ITWR"
 
   add-provider goodP-number "good"
   add-provider ordinaryP-number "ordinary"
@@ -134,7 +139,6 @@ to setup
     let x x-pos
     let y y-pos
     let z z-pos
-
     ask consummers [
       let d great-distance x-pos y-pos z-pos x y z
       if d > maxD [set maxD d]
@@ -215,6 +219,12 @@ to-report get-type-properties [ptype]
     report (list PL-WORST PL-OK BAD-DEV) ]
 end
 
+to-report get-component-coef [k]
+  if k = "IT" [report wI]
+  if k = "WR" [report wW]
+end
+
+
 
 ;_________________________ calculation methods ________________
 to-report vary [ #min #max ]  ; random float in given range
@@ -277,43 +287,24 @@ to-report get-lat-long [x y z]
   report (list lat lon)
 end
 
-to-report get-acquaintances-neighbours [b]
-  let neighbours []
-  let x x-pos
-  let y y-pos
-  let z z-pos
-  let r radius
-  let b-xpos 0
-  let b-ypos 0
-  let b-zpos 0
-  ask turtle b
-  [set b-xpos x-pos
-   set b-ypos y-pos
-   set b-zpos z-pos
-  ]
-  ask consummers [
-    let d great-distance x y z x-pos y-pos z-pos
-    if (d < r) [ set neighbours lput (list who (great-distance x-pos y-pos z-pos b-xpos b-ypos b-zpos)) neighbours ]
-  ]
-  set neighbours reverse sort-with [ l -> item 1 l ] neighbours
-  set neighbours sublist neighbours 0 nBF
-  let res []
-  foreach neighbours
-  [n -> set res lput item 0 n res]
-  report res
-end
-
 ;_________________________ set rating & trust value ________________
 
-;;There is a difference between getting his own rates (direct interaction where a=who) and others (witnesses where a !=who)
-to-report get-rates [a b]
+;;There is a difference between getting his own rates (direct interaction) and others (witnesses)
+to-report get-rates [k b]
+
   let r-ab []
-  foreach ratings [
-    r ->
-    if (item 1 r = b) and (item 0 r = a) [
-      set r-ab lput r r-ab
+  if k = "IT"[
+    foreach ratings [
+      r ->
+      if (item 1 r = b) [
+        set r-ab lput r r-ab
+      ]
     ]
+
   ]
+
+  if k = "WR" [
+    set r-ab wr-evaluation b]
   report r-ab
 end
 
@@ -327,40 +318,71 @@ to-report has-ratings? [x]
   report false
 end
 
+
 ;;;General t-value (with all components)
-;to-report get-t-value [k a]
-;  let t-value 0
-;  let weight-sum 0
-;  foreach component [
-;    k ->
-;    let tk get-t-value-by-component k a b
-;    let w ( get-component-coef k * get-reliability k a b tk )
-;    set t-value (t-value + w * tk)
-;    set weight-sum weight-sum + w
-;  ]
-;
-;  set t-value (t-value / weight-sum)
-;  report t-value
-;end
-;
-;
-;;;T-value for the component k from the list r-ab
-;to-report get-t-value-by-component [k a b]
-;  let r-ab []
-;  if k = "IT" [set r-ab get-rates a b]
-;  if k = "WR" [set r-ab get-rates null b]
-;  let t-value 0
-;  let weight-sum 0
-;  foreach r-ab [
-;    r ->
-;    let weight get-weight(k, r)
-;
-;		set weight-sum (weight-sum + weight)
-;		set t-value t-value + (weight * item 3 r)
-;  ]
-;  set t-value (t-value / weight-sum)
-;  report t-value
-;end
+to-report get-t-value [b]
+  let components []
+
+  if t-model = "IT" [set components (list "IT")]
+  if t-model = "ITWR" [set components (list "IT" "WR")]
+  let t-value 0
+  let weight-sum 0
+  let r-ab []
+
+  foreach components [
+    k ->
+
+    set r-ab get-rates k b
+
+    if length r-ab > 0 [
+      let tks get-t-value-by-component k r-ab
+      let reliability item 1 tks
+      let tk item 0 tks
+      let w ( (get-component-coef k) * reliability )
+      set t-value (t-value + w * tk)
+      set weight-sum weight-sum + w
+    ]
+
+
+  ]
+  if (weight-sum = 0) [set weight-sum 1]
+
+  set t-value (t-value / weight-sum)
+  report t-value
+end
+
+
+;;T-value for the component k from the list r-ab
+;;will return a list of 2 elements : first is trust value and second is reliability
+to-report get-t-value-by-component [k r-ab]
+  let gamma gammaI
+
+	if(k = "WR")[
+    set gamma gammaW
+  ]
+	if(k = "CR")[
+    set gamma gammaC
+  ]
+
+  let t-value 0
+  let weight-sum 0
+  let p-d 0
+  foreach r-ab [
+    r ->
+    let weight get-weight k r
+
+		set weight-sum (weight-sum + weight)
+    set p-d p-d + weight * abs (item 3 r - t-value)
+		set t-value t-value + (weight * item 3 r)
+  ]
+
+	set p-d 1 - (p-d / (2 * weight-sum))
+	let pr 1 - (exp (-1 * gamma * weight-sum))
+
+  set t-value (t-value / weight-sum)
+  report (list t-value (pr * p-d))
+
+end
 
 to-report get-weight [k r]
   if ((k = "IT") or (k = "WR")) [
@@ -369,66 +391,7 @@ to-report get-weight [k r]
   report 0
 end
 
-;to-report get-reliability [k t-value]
-;
-; if(k==Component.IT):
-;		set gamma gammaI
-;		set r-ab get-rates who b
-;	if(k==Component.WR):
-;		set gamma gammaWR
-;		set r-ab get-rates any b
-;	if(k==Component.CR):
-;		set gamma gammaCR
-;		;set r-ab get-rates
-;
-; let p-d 0
-;	let weight-sum 0
-;	foreach r-ab [
-;    r ->
-;		let weight get-weight k r
-;		set weight-sum weight-sum + weight
-;		set p-d p-d + weight * abs (item 3 r - t-value)
-;	]
-;	set p-d 1 - (p-d / (2 * weight-sum))
-;	let pr 1 - exp (-1 * gamma * weight-sum)
-;	
-;  report pr * p-d
-;end
-
-to-report get-t-value [a b]
-  let t-value 0
-  let weight-sum 0
-  let r-ab get-rates a b
-
-  foreach r-ab [
-    r ->
-    let weight exp(-1 * (ticks - item 2 r)) / lambdaIT
-
-		set weight-sum (weight-sum + weight)
-		set t-value t-value + weight * item 3 r
-  ]
-  set t-value (t-value / weight-sum)
-  report t-value
-end
-
-
-to-report get-reliability [a b t-value]
-  let gamma gammaI
-  let p-d 0
-	let weight-sum 0
-  let r-ab get-rates a b
-	foreach r-ab [
-    r ->
-		let weight exp(-1 * ticks - item 2 r) / lambdaIT
-		set weight-sum weight-sum + weight
-		set p-d p-d + weight * abs (item 3 r - t-value)
-	]
-	set p-d 1 - (p-d / (2 * weight-sum))
-	let pr 1 - exp (-1 * gamma * weight-sum)
-	
-  report pr * p-d
-end
-
+;; sort decreasingly a list of lists (by item of sublist)
 to-report sort-with [ key lst ]
   report sort-by [ [a b] -> (runresult key a) > (runresult key b) ] lst
 end
@@ -439,65 +402,130 @@ to delete-old-ratings
   set ratings sublist ratings 0 H
 end
 
+;;WR evaluation process for provider b
+to-report wr-evaluation [b]
+	let chain 0
+	let witnessNb 0
+	let ratingslist []
+  let seen-consumers []
 
-to-report collect-ratings-neighbours [list-neighbours-asked a b depth width res]
-  ifelse depth <= 0
-  [ifelse member? b list-neighbours-asked
-    [report res] ;b was asked before]
-    [foreach get-rates a b
-      [x -> set res lput x res]
-      report res]]
+  ;Initialization with his nearest neighbours
+	let acquaintances get-acquaintances-neighbours b seen-consumers
+  let new-acquaintances []
 
-  [foreach get-rates a b
-      [x -> set res lput x res]
-   set list-neighbours-asked lput b list-neighbours-asked
-   let neighbours []
-   foreach get-neighbours ;;Idk how to get neighbours of a
-    [x ->
-      if not member? x list-neighbours-asked
-      [set neighbours lput x neighbours]
+  set seen-consumers lput who seen-consumers
+
+  while [witnessNb < nBF and chain < nRL] [
+
+    set chain chain + 1
+
+    foreach new-acquaintances[
+      x ->
+      ;avoid doublons
+      if (not member? x acquaintances) [set acquaintances lput x acquaintances]
     ]
-    let i 0
-    while [empty? neighbours or i = width]
-    [
-      let n one-of neighbours
-      set neighbours remove n neighbours
-      set list-neighbours-asked lput n list-neighbours-asked
-      set res collect-ratings-neighbours list-neighbours-asked n b (depth - 1) width res
-      set i i + 1
+
+    ;show acquaintances
+
+    foreach acquaintances [
+    a ->
+    ask consummer a [
+
+      set acquaintances remove a acquaintances
+      ifelse has-ratings? b
+        [
+
+
+          let found-ratings (get-rates "IT" b)
+          foreach found-ratings [
+            f ->
+            set ratingslist lput f ratingslist
+          ]
+          ;If he had an interaction he is a witness
+          set witnessNb witnessNb + 1
+        ]
+        [
+          ;Everyone puts the neighbours he have in new acquaintanes
+          let my-neighbours (get-acquaintances-neighbours b seen-consumers)
+          ;;TODO get nBF acquaintances exactly (if one of my acquaintances is already in the list I replace it with another one
+          foreach my-neighbours[
+            n ->
+            if (not member? n new-acquaintances) [set new-acquaintances lput n new-acquaintances]
+          ]
+        ]
+      ]
+    set seen-consumers lput a seen-consumers
     ]
-    report res
   ]
+
+	report ratingslist
 end
+
+
 
 ;_________________________ agents selection________________
 
-;get neighbours of a provider
+;get consumer neighbours of an agent (based on his 'operating' radius)
 to-report get-neighbours
   let neighbours []
   let x x-pos
   let y y-pos
   let z z-pos
   let r radius
+  let myId who
 
   ask consummers [
     let d great-distance x y z x-pos y-pos z-pos
-    if (d < r) [ set neighbours lput who neighbours ]
+    ;do not add self to the list
+    if ((not (who = myId)) and (d < r))
+    [ set neighbours lput who neighbours ]
   ]
   report neighbours
 end
 
-to-report select-random-provider ;[x y z r]
-  ;let provs []
-  ;ask providers
-  ;[
-   ;if great-distance x y z x-pos y-pos z-pos < r
-    ;[set provs lput who provs]
-  ;]
+; get a random provider (wherever he is, whatever his type is)
+to-report select-random-provider
   let id 0
   ask one-of providers [set id who]
   report id
 end
+
+;; among neighbours, we get the nearest to the provider b whose trust value is searched
+to-report get-acquaintances-neighbours [b seen-consumers]
+  let neighbours get-neighbours
+  let neighbours-details []
+  let provider-position []
+
+  ask provider b
+  [set provider-position (list x-pos y-pos z-pos)]
+
+  let distance-temp 0
+  foreach neighbours [
+    n ->
+    ask consummer n [set distance-temp great-distance x-pos y-pos z-pos item 0 provider-position item 1 provider-position item 2 provider-position]
+    set neighbours-details lput (list n distance-temp) neighbours-details
+  ]
+
+  set neighbours-details reverse sort-with [ l -> item 1 l ] neighbours-details
+
+  if length neighbours-details > nBF [
+
+    set neighbours-details sublist neighbours-details 0 nBF
+  ]
+
+  let res []
+  let agenttmp 0
+  foreach neighbours-details
+  [n ->
+    set agenttmp item 0 n
+    if (length res < nBF) and (not member? agenttmp seen-consumers) [
+      set res lput agenttmp res
+    ]
+  ]
+
+  report res
+end
+
 
 to-report select-best-provider
   let best-value -20
@@ -505,7 +533,20 @@ to-report select-best-provider
   foreach has-trust-value
   [
     x ->
-    let t-value get-t-value who x
+
+    ;if IT only no need to combine composants
+    let t-value 0
+
+    ifelse t-model = "IT" [
+
+      let r-ab get-rates "IT" x
+      set t-value item 0 (get-t-value-by-component t-model r-ab)
+    ]
+
+    [
+
+      set t-value get-t-value x]
+
     if t-value > best-value
     [
       set best-value t-value
@@ -516,12 +557,12 @@ to-report select-best-provider
 end
 
 to-report select-provider
-  if t-model = "NoTrust" [
+  ifelse t-model = "NoTrust" [
     report select-random-provider
   ]
 
-  if t-model = "IT" [
-
+  [
+    let witness-ratings []
     let providersIds []
     ask providers [
       set providersIds lput who providersIds
@@ -531,13 +572,22 @@ to-report select-provider
     set no-trust-value []
     foreach providersIds [
       x ->
+
       ifelse has-ratings? x [
 
         set has-trust-value lput x has-trust-value
       ]
 
       [
-        set no-trust-value lput x no-trust-value
+        ifelse t-model = "ITWR" [
+          set witness-ratings wr-evaluation x
+
+          ifelse length witness-ratings = 0
+          [set no-trust-value lput x no-trust-value]
+          [set has-trust-value lput x has-trust-value]
+
+        ]
+        [set no-trust-value lput x no-trust-value]
       ]
 
     ]
@@ -547,8 +597,14 @@ to-report select-provider
 
     let best-p select-best-provider
 
+    let t-value 0
+    ;if IT only no need to combine composants
+
+    let r-ab get-rates "IT" best-p
+    ifelse t-model = "IT" [set t-value item 0 (get-t-value-by-component t-model r-ab)]
+
+    [set t-value get-t-value best-p]
     ;;er-exploit gets best trust value ([-1;1]
-    let t-value get-t-value who best-p
     let er-exploit t-value
 
     ;; to ug scale - [-10;10]
@@ -714,7 +770,9 @@ to interact-with [b]
 
   ]
   ;add utilities to global lists
-  if t-model = "IT" [ set UGs-fire lput ug UGs-fire ]
+  if t-model = "ITWRCR" [ set UGs-ITWRCR lput ug UGs-ITWRCR ]
+  if t-model = "ITWR" [ set UGs-ITWR lput ug UGs-ITWR ]
+  if t-model = "IT" [ set UGs-IT lput ug UGs-IT ]
   if t-model = "NoTrust" [ set UGs-NoTrust lput ug UGs-NoTrust ]
 
   ;The rating value is in [-1;1] and the performance in [-10;10]
@@ -731,7 +789,9 @@ end
 ;_________________________ main loop ________________
 to go
 
-  set UGs-fire []
+  set UGs-IT []
+  set UGs-ITWR []
+  set UGs-ITWRCR []
   set UGs-NoTrust []
 
   ask consummers [
@@ -745,13 +805,13 @@ to go
 
     ]
 
-    ;random-move
+    if dynamism-setup [random-move]
   ]
 
 
- ; ask providers [switch-behaviour]
+  if dynamism-behaviours [ask providers [switch-behaviour]]
 
-  ;random-setup
+  if dynamism-moves [random-setup]
 
   if ticks >= rounds-number [stop]
 
@@ -827,9 +887,9 @@ TEXTBOX
 483
 180
 539
-réglable : nBF, nRL, degradation, temperature, pourcentage agents, poids des components
+réglable : degradation, poids des components
 11
-103.0
+71.0
 1
 
 PLOT
@@ -849,7 +909,9 @@ true
 "" ""
 PENS
 "noTrust" 1.0 0 -2674135 true "" "plot mean UGs-NoTrust "
-"CONTROL (FIRE-IT)" 1.0 0 -14454117 true "" "plot mean UGs-fire"
+"CONTROL (FIRE-IT)" 1.0 0 -14454117 true "" "plot mean UGs-IT"
+"IT-WR" 1.0 0 -13840069 true "" "plot mean UGs-ITWR"
+"IT-WR-CR" 1.0 0 -4757638 true "" "plot mean UGs-ITWRCR"
 
 SLIDER
 321
@@ -860,7 +922,7 @@ rounds-number
 rounds-number
 0
 500
-0.0
+500.0
 1
 1
 NIL
@@ -875,47 +937,11 @@ H
 H
 0
 50
-0.0
+10.0
 1
 1
 NIL
 HORIZONTAL
-
-PLOT
-705
-288
-905
-438
-Temperature (choice explore-exploit)
-NIL
-NIL
-0.0
-10.0
-0.0
-3.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot mean [T] of consummers"
-
-PLOT
-702
-121
-902
-271
-exploit vs explore
-NIL
-NIL
-0.0
-10.0
-0.0
-1.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot 1 - mean choiceExp"
 
 SLIDER
 39
@@ -926,7 +952,7 @@ Nc
 Nc
 0
 500
-0.0
+38.0
 1
 1
 NIL
@@ -941,7 +967,7 @@ goodP-number
 goodP-number
 0
 100
-0.0
+4.0
 1
 1
 NIL
@@ -956,7 +982,7 @@ ordinaryP-number
 ordinaryP-number
 0
 100
-0.0
+6.0
 1
 1
 NIL
@@ -971,7 +997,7 @@ intermittentP-number
 intermittentP-number
 0
 100
-0.0
+2.0
 1
 1
 NIL
@@ -986,7 +1012,7 @@ badP-number
 badP-number
 0
 100
-0.0
+9.0
 1
 1
 NIL
@@ -998,10 +1024,54 @@ INPUTBOX
 498
 155
 initialTemperature
-0.0
+1.0
 1
 0
 Number
+
+SWITCH
+39
+272
+235
+305
+dynamism-behaviours
+dynamism-behaviours
+1
+1
+-1000
+
+SWITCH
+38
+320
+205
+353
+dynamism-moves
+dynamism-moves
+1
+1
+-1000
+
+SWITCH
+39
+370
+201
+403
+dynamism-setup
+dynamism-setup
+1
+1
+-1000
+
+MONITOR
+684
+40
+774
+85
+CONSUMERS
+count consummers
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?

@@ -61,3 +61,36 @@ let p-details []
       
     ]
   ]
+
+
+## LEON's recursive method - WR eval. process
+
+to-report collect-ratings-neighbours [list-neighbours-asked a b depth width res]
+  ifelse depth <= 0
+  [ifelse member? b list-neighbours-asked
+    [report res] ;b was asked before]
+    [foreach get-rates b
+      [x -> set res lput x res]
+      report res]]
+
+  [foreach get-rates b
+      [x -> set res lput x res]
+   set list-neighbours-asked lput b list-neighbours-asked
+   let neighbours []
+   foreach get-neighbours ;;Idk how to get neighbours of a
+    [x ->
+      if not member? x list-neighbours-asked
+      [set neighbours lput x neighbours]
+    ]
+    let i 0
+    while [empty? neighbours or i = width]
+    [
+      let n one-of neighbours
+      set neighbours remove n neighbours
+      set list-neighbours-asked lput n list-neighbours-asked
+      set res collect-ratings-neighbours list-neighbours-asked n b (depth - 1) width res
+      set i i + 1
+    ]
+    report res
+  ]
+end

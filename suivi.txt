@@ -56,3 +56,12 @@ J'ai tout mis en commentaire parce que on en a pas besoin pour cette partie.
 • Fixed T=0.00015 when T <= 0 but this statement is never reached even though we used T -= 0.00015
 • *cri de joie* Enfin, atteint 4.xx IT en utilisant T = initialTemperature * ((999 / 1000) ^ (ticks))
 • Ask-neighbours added
+
+26.11.18
+• T *= 999/1000
+• Généralisation des fonctions en fonction du component K
+• Attention ! On a une reliability nulle quand on utilise seulement IT
+	car weightSum trèèèèèès faible donc on utilise pas quand seulementIT
+• TODO Voir si meme erreur avec WR
+• Commentaires
+• Première version IT-WR implémenté (à tester - trop lent)
