@@ -61,10 +61,8 @@ def getReliability(k,Rab,Tk):
 
 def hasRatings(p) :
 
-	# Attention : quand on nous demande une note 
-	# -> Fournir suelement intéractions directs ?
 	wRatings = evaluationProcessWR(p)
-	ratings.append(wRatings)
+	#FAUX ratings.append(wRatings)
 
 	if ratings.contains(p):
 		return True
@@ -141,7 +139,7 @@ def evaluationProcessWR(provider):
 
 	#Initialization with his nearest neighbours
 	while nbAcquaintances < nbF : 
-		acquaintances +=choose nextNearestConsumer
+		acquaintances += choose nextNearestConsumer
 
 	while (witnessNb < nBF and chain < nRL)
 		chain ++
