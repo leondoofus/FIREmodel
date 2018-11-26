@@ -297,15 +297,11 @@ to-report get-acquaintances-neighbours [b]
   ]
   set neighbours reverse sort-with [ l -> item 1 l ] neighbours
   set neighbours sublist neighbours 0 nBF
-  let res []
-  foreach neighbours
-  [n -> set res lput item 0 n res]
-  report res
+  l
+  report 0
 end
 
 ;_________________________ set rating & trust value ________________
-
-;;There is a difference between getting his own rates (direct interaction where a=who) and others (witnesses where a !=who)
 to-report get-rates [a b]
   let r-ab []
   foreach ratings [
@@ -369,19 +365,20 @@ to-report get-weight [k r]
   report 0
 end
 
-;to-report get-reliability [k t-value]
+;to-report get-reliability [k r-ab t-value]
 ;
-; if(k==Component.IT):
-;		set gamma gammaI
-;		set r-ab get-rates who b
+;  if(k==Component.IT):
+;		gamma =gammaI
+;		RList <- RI(a,b,c)
 ;	if(k==Component.WR):
-;		set gamma gammaWR
-;		set r-ab get-rates any b
+;		gamma = gammaWR
+;		RList <- RW(a,b,c)
 ;	if(k==Component.CR):
-;		set gamma gammaCR
-;		;set r-ab get-rates
-;
-; let p-d 0
+;		gamma=gammaCR
+;		RList <- RC(a,b,c)
+;  if k = "WR" [set gamme gammeWR]
+;  if k = "CR" [set gamme gammeCR]
+;  let p-d 0
 ;	let weight-sum 0
 ;	foreach r-ab [
 ;    r ->
@@ -447,7 +444,6 @@ to-report collect-ratings-neighbours [list-neighbours-asked a b depth width res]
     [foreach get-rates a b
       [x -> set res lput x res]
       report res]]
-
   [foreach get-rates a b
       [x -> set res lput x res]
    set list-neighbours-asked lput b list-neighbours-asked
