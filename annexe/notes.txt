@@ -1,0 +1,96 @@
+NOTES !
+
+
+
+# On élimine le terme c complètement car inutile..
+
+#L'index de l'intéraction commence à 0
+
+
+#Je garde ça ici on en aura peut etre besoion (random move initial de Leon)
+
+to random-move ;for everyone
+  ask turtles [
+    set x-pos vary (-1.0 * sqrt(shape-size)) sqrt(shape-size)  ; however, random distribution on the surface of the sphere
+    set y-pos vary (-1.0 * sqrt(shape-size - (x-pos * x-pos))) sqrt(shape-size - (x-pos * x-pos))
+    ifelse (random 2) = 0
+      [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+      [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
+    setxyz x-pos y-pos z-pos
+  ]
+end
+
+
+# Conversion from cartesian coordinates to polar coordinates
+https://en.wikipedia.org/wiki/Spherical_coordinate_system#Cartesian_coordinates
+r = sqrt (x*x + y*y + z*z)
+teta = arcos (z/r)
+phi = arctan (y/x)
+
+# Conversion from polar coordinates to cartesian coordinates
+x = r * sin (theta) * cos (phi)
+y = r * sin (theta) * sin (phi)
+z= r * cos (theta)
+
+# Conversion from cartesian to longitude latitude
+https://sciencing.com/convert-xy-coordinates-longitude-latitude-8449009.html
+https://stackoverflow.com/questions/1185408/converting-from-longitude-latitude-to-cartesian-coordinates
+lat = asin(z / R)
+lon = atan2(y, x)
+
+#Great circle distance calucl
+https://fr.wikipedia.org/wiki/Distance_du_grand_cercle
+
+
+
+## To draw circles around providers (add at the end of setup)
+let p-details []
+  ask providers [
+    set p-details lput (list x-pos y-pos z-pos radius) p-details
+  ]
+  foreach p-details [
+    x ->
+    create-turtles 1 [
+      setxyz item 0 x item 1 x item 2 x
+      
+      set size (item 3 x / 100)
+      set shape "circle 2"
+      set color white
+      stamp 
+      die
+      
+    ]
+  ]
+
+
+## LEON's recursive method - WR eval. process
+
+to-report collect-ratings-neighbours [list-neighbours-asked a b depth width res]
+  ifelse depth <= 0
+  [ifelse member? b list-neighbours-asked
+    [report res] ;b was asked before]
+    [foreach get-rates b
+      [x -> set res lput x res]
+      report res]]
+
+  [foreach get-rates b
+      [x -> set res lput x res]
+   set list-neighbours-asked lput b list-neighbours-asked
+   let neighbours []
+   foreach get-neighbours ;;Idk how to get neighbours of a
+    [x ->
+      if not member? x list-neighbours-asked
+      [set neighbours lput x neighbours]
+    ]
+    let i 0
+    while [empty? neighbours or i = width]
+    [
+      let n one-of neighbours
+      set neighbours remove n neighbours
+      set list-neighbours-asked lput n list-neighbours-asked
+      set res collect-ratings-neighbours list-neighbours-asked n b (depth - 1) width res
+      set i i + 1
+    ]
+    report res
+  ]
+end

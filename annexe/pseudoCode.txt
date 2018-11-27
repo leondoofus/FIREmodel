@@ -1,0 +1,245 @@
+# <------------- Les structures ------------->
+
+Rate
+	consumer
+	provider
+	interactionNb 		#from 0 to n
+	valueV
+	reliability rating
+
+ConsumerAgent
+	idC
+	ro #rayon d'opération
+	activityLevel #<- random
+	liste[ratings]  #<- liste de Rate
+	nbOfInteraction=0
+	trustModel model;
+	hasTrustValue=list()
+	noTrustValue=list()
+
+ProviderAgent
+	idF
+	ro #rayon d'opération
+	providerType pType
+	performanceLevel #μP
+	receivedRatings=list() #<- liste de float
+
+enum providerType{
+
+	good ([PL_GOOD, PL_PERFECT], 1.0)
+	ordinary ([PL_OK, PL_GOOD], 2.0),
+	bad ([PL_WORST, PL_OK], 2.0),
+	intermittent (None, None) #Random perf in range [PL_BAD, PL_GOOD]
+
+}
+
+def getPerformanceLevel(provider):
+	if(provider.pType==intermittent):
+		return random(PL_BAD , PL_GOOD) # A refaire à chaque fois, pour que ce soit instable
+	return random(provider.pType.intervalle); #Supposition que c'est un random (voir Table2 p.139)
+
+
+enum trustModel{
+	NoTrust,
+	IT,
+	ITCR,
+	ITCRWR
+}
+
+
+# <------------- Variables statiques ------------->
+
+#Static experimental variables
+roundsNb= 500
+goodPNb = 10
+ordinaryPNb=40
+intermittentPNb = 5
+badPNb= 45
+ 
+Nc=500	#Nb of consumer agents in each group
+rangeActivityLevel = [0.25,1.00] #alpha
+
+#Static Parameters
+H = 10
+lambdaIT = -(5/ln(0.5))
+nBF= 2
+nRL=5
+#Componeent Coeffictient
+wI = 2
+wR=2
+wW = 1
+wC = 0.5
+#Reliability function parameters
+gammaI = gammaR =gammaW= gammaC= -ln(0.5)
+
+#static performanceLevel-utility
+PL_PERFECT=10
+PL_GOOD=5
+PL_OK=0
+PL_BAD=-5
+PL_WORST=-10
+
+
+# <------------- GLOBALS ------------->
+UGs_fire=list()
+UGs_NoTModel=list()
+
+
+# <------------- FUNCTIONS ------------->
+def getTI(a,b,c=None):
+	lambda=-5/ln(0.5)
+	somme=0
+	weightSum=0
+	foreach r dans R(a,b,c):
+		weight=(exp(-1*this.tick-r[i])/lambda)
+		weightSum+=weight
+		somme+=weight*r[v]
+
+	return somme/weightSum
+
+
+def getReliability(Ti(a,b,c)):
+	gamma ??
+	
+	pD=0
+	lambda=-5/ln(0.5)
+	weightSum=0
+	foreach r dans R(a,b,c):
+		weight=(exp(-1*this.tick-r[i])/lambda)
+		weightSum+=weight
+		pD+= weight * abs (r[v] - Ti(a,b,c))
+	
+	pD = 1 - pD/(2*weightSum)
+	pR=1-exp(-1*gamma*weightSum)
+	return pR*pD
+
+
+def deleteOldRatings:
+	#ne conserver que les H derniers ratings 
+
+
+
+def searchProvider:
+	if modele == NoTrust:
+		return selectRandomProvider()
+	if modele == FIRE:
+		foreach providers p:
+			if (getRatingFor(p) == empty):
+				noTrustValue <- p
+			else
+				hasTrustValue <- p
+
+		
+
+		
+		if(hasTrustValue==empty):
+			return selectRandomProvider()
+		if(noTrustValue==empty):
+			return selectBestProvider()
+
+
+		
+		bestP= selectBestProvider()
+		ER_a1=getTI(self,bestP)
+
+		averageUG=0
+		foreach provider p:
+			averageUG+=p.pType.moyenne
+		averageUG /= totalPNb
+		ER_a2 = averageUG
+		#a2 selectRandomProvider
+		#a1 selectBestProvider
+		T=100
+		T-=1
+		pA1=(exp(ER_a1/T))/((exp(ER_a1/T))+(exp(ER_a2/T)))
+
+		if (random (0,1 )< pA1):
+			return bestP
+		else:
+			return selectRandomProvider()
+
+def selectBestProvider():
+## TODO : getTI & reliability etc 
+	bestV=-1000
+	bestP=None
+	foreach p in hasTrustValue:
+		trustValue=getTI(self,p)
+		if( trustValue> bestV):
+			bestV <- trustValue
+			bestP<-p
+
+
+
+	return bestP
+
+
+def interactWith(AgentF provider):
+	
+	uG=np.random.normal(mean,deviation)
+	if(self.modele==FIRE):
+		UGs_fire <- uG
+	else:
+		UGs_NoTModel <- uG
+	ratingValue=uG/10 ## A Vérifier
+	storeRating(ratingValue);
+
+	nbOfInteraction+=1
+
+
+# store the performance in the local database and share with the provider 
+def storeRating (provider,v):
+	self.ratings <- (new Rate (self,provider, self.nbOfInteraction-1,v))
+	provider.receivedRatings <- v
+	
+
+
+
+#random amount of agent entering and quiting the world
+def randomSetup:
+	pCPC=5%
+	pPPC=2%
+	#Nb d'agents maintenu constant.
+	n=random (0,PCPC*populationC) #<- ENTIER
+	add n agentsC
+	delete n agentsC
+
+	n=random (0,pPPC*populationF)
+	add n agentsF
+	delete n agentsF
+
+def randomMove:
+	intervalle=pi/20
+	randomPhi= random (-intervalle, intervalle)
+	randomTeta=random (-intervalle, intervalle)
+	pCLC = 0.10
+	pPLC = 0.10
+	newPosition=
+	if(random(0,1)<0.1):
+		agent.moveTo(newPosition)
+
+def switchBehaviour:
+	probaMuc=0.1
+	M=1
+	pProfileSwitch : 0.02
+	if random< probaMuC:
+		deltaMu=random(-M,M)
+		newPerformance=oldPerformance + deltaMu
+
+	if random < pProfileSwitch:
+		newProfile
+
+# <------------- Main loop ------------->
+def go :
+
+	foreach agentC:
+		if random < activityLevel:
+			provider=searchProvider
+			interactWith(provider)
+
+	foreach agentF:
+		switchBehaviour
+
+	foreach agentC:
+		randomMove
+
+	randomSetup

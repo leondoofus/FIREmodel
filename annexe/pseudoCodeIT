@@ -1,0 +1,326 @@
+# <------------- Les structures ------------->
+
+Rate
+	a #consumer
+	b #provider
+	i #interactionNb from 0 to n
+	v #valueV
+
+ConsumerAgent
+	idC #identifiant unique
+	ro <- random() #rayon d'opération #A REGLER
+	activityLevel <- random(rangeActivityLevel) #<- random
+	ratings <- list()  #<- liste de Rate
+	trustModel model;
+	hasTrustValue <- list()
+	noTrustValue <- list()
+
+ProviderAgent
+	idF
+	ro <- random() #rayon d'opération #A REGLER 
+	providerType pType
+	performanceLevel <- 0 #μP
+	receivedRatings <- list() #<- liste de float
+
+## type associated with mean's range and deviation
+enum providerType{
+
+	good ([PL_GOOD, PL_PERFECT], 1.0)
+	ordinary ([PL_OK, PL_GOOD], 2.0),
+	bad ([PL_WORST, PL_OK], 2.0),
+	intermittent (None, None) #Random perf in range [PL_BAD, PL_GOOD]
+
+}
+
+
+enum trustModel{
+	NoTrust,
+	IT
+}
+
+enum Component{
+	IT,
+	WR,
+	CR
+}
+
+
+# <------------- Variables statiques ------------->
+
+#Static experimental variables
+roundsNb= 500
+goodPNb = 10
+ordinaryPNb=40
+intermittentPNb = 5
+badPNb= 45
+ 
+Nc=500	#Nb of consumer agents in each group
+rangeActivityLevel = [0.25,1.00] #alpha
+
+#Static Parameters
+H = 10 
+lambdaIT = -(5/ln(0.5))
+nBF= 2
+nRL=5
+#Componeent Coeffictient
+wI = 2
+wR=2
+wW = 1
+wC = 0.5
+#Reliability function parameters
+gammaI = gammaR =gammaW= gammaC= -ln(0.5)
+
+#static performanceLevel-utility
+PL_PERFECT=10
+PL_GOOD=5
+PL_OK=0
+PL_BAD=-5
+PL_WORST=-10
+
+#Self defined statics
+DEGRADATION=1 #How much the distance will affect a performance when the consumer isn't in the ro of the provider
+
+
+# <------------- GLOBALS ------------->
+UGs_fire=list()
+UGs_NoTModel=list()
+interactionRounds # ticks
+
+#Self-Defined parameters
+T=100 #Temperature parameter (will decrease with time) for the choice between exploit & explore #A REGLER
+
+
+# <------------- FUNCTIONS ------------->
+
+## Will set initially the performance of a provider
+function setPerformanceLevel(provider):
+	## We consider that intermittent providers are unpredictable. 
+	# They will have a different performance for each interaction (A vérifier)
+	# So we don't define their perf Level initially
+	if(provider.pType!=intermittent):		
+		provider.performanceLevel=random(provider.pType.intervalle); #Supposition que c'est un random (voir Table2 p.139)
+
+
+#Trust value returned for provider b
+function getTI(a,b):
+	lambda=-5/ln(0.5)
+	somme=0
+	weightSum=0
+	foreach r dans R(a,b,c):
+		weight=(exp(-1*this.tick-r[i])/lambda)
+		weightSum+=weight
+		somme+=weight*r[v]
+
+	return somme/weightSum
+
+#Reliability for trust value
+function getReliability(a,b,TI):
+	gamma =gammaI
+	
+	pD=0
+	lambda=-5/ln(0.5)
+	weightSum=0
+	foreach r dans R(a,b,c):
+		weight=(exp(-1*this.tick-r[i])/lambda)
+		weightSum+=weight
+		pD+= weight * abs (r[v] - TI)
+	
+	pD = 1 - pD/(2*weightSum)
+	pR=1-exp(-1*gamma*weightSum)
+	return pR*pD
+
+
+# To avoid storing every rating (limited memory)
+function deleteOldRatings:
+ 	#ne conserver que les H derniers ratings 
+	sort self.ratings by i in decreasing order
+	#sublist of H first elements
+	self.ratings <- self.ratings[:H]
+
+
+## select provider 
+
+function searchProvider:
+
+	## without a trustModel we select randomly
+	if modele == NoTrust:
+		return selectRandomProvider()
+
+
+	if modele == IT:
+		#Separate known and unknown providers
+		foreach providers p:
+			if (getRatingFor(p) == empty):
+				noTrustValue <- p
+			else
+				hasTrustValue <- p
+		
+		if(hasTrustValue==empty):
+			return selectRandomProvider()
+		if(noTrustValue==empty):
+			return selectBestProvider()
+		
+
+		# store the best known provider
+		bestP <- selectBestProvider()
+		#expected performance value from this best provider
+		ER_a1 <- getTI(self,bestP)
+
+		averageUG=0
+		foreach provider p:
+			averageUG+=meanOf(p.pType.intervalle)
+		averageUG /= totalPNb
+
+		#expected performance value from all providers (known and unknown)
+		ER_a2 <- averageUG
+		#Two choices:
+		#a2 selectRandomProvider	(explore)
+		#a1 selectBestProvider		(exploit)
+
+		#Temperature parameter decreases
+		T/=1.5
+
+		#Proba of choosing option 1 (exploit)
+		pA1=(exp(ER_a1/T))/((exp(ER_a1/T))+(exp(ER_a2/T)))
+
+		if (random (0,1 )< pA1):
+			return bestP
+		else:
+			return selectRandomProvider()
+
+
+# Choose best provider by selecting max of trust values
+function selectBestProvider():
+	bestV=-1000
+	bestP=None
+	foreach p in hasTrustValue:
+		trustValue=getTI(self,p)
+		if( trustValue> bestV):
+			bestV <- trustValue
+			bestP<-p
+
+	return bestP
+
+
+##Interaction function
+function interactWith(AgentF provider):
+
+	#Unpredictable performance for intermittent
+	if(provider.pType==intermittent):
+		uG <- random(PL_BAD , PL_GOOD)
+	# Else normal distribution
+	else:
+		uG <- np.random.normal(provider.performanceLevel,provider.pType.deviation)
+
+	# If outside of the provider’s normal operational, uG degraded linearly 
+	if(providerOutOfORange):  ##TODO LEON
+		uG*=degradation*distance #valeurs à determiner !
+
+	#Add utilities to global lists (for plots)
+	if(self.modele==IT):
+		UGs_fire <-  uG
+	else:
+		UGs_NoTModel <- uG
+
+	#The rating value is in [-1;1] and the performance in [-10;10]
+	ratingValue <- uG/10 ## A Vérifier
+	storeRating(ratingValue);
+	## increment nb of interaction
+	
+
+
+# store the performance in the local database and share with the provider 
+function storeRating (provider,v):
+	self.ratings <- (new Rate (self,provider, interactionRounds,v))
+	provider.receivedRatings <- v
+	
+
+
+
+#random amount of agent entering and quiting the world
+function randomSetup:
+	pCPC<-5%
+	pPPC<-2%
+	#Nb d'agents maintenu constant.
+	n<-random (0,PCPC*populationC) #<- ENTIER
+	add n agentsC
+	delete n agentsC
+
+	n<-random (0,pPPC*populationF)
+	add n agentsF
+	delete n agentsF
+
+function randomMove:
+	intervalle <- pi/20
+	randomPhi <- random (-intervalle, intervalle)
+	randomTeta <- random (-intervalle, intervalle)
+	pCLC <- 0.10
+	pPLC <- 0.10
+	newPosition <- ##TODO LEON
+	if(random(0,1)<0.1):
+		agent.moveTo(newPosition)
+
+function switchBehaviour:
+	probaMuc <- 0.1
+	M <- 1
+	pProfileSwitch : 0.02
+	if random< probaMuC:
+		deltaMu=random(-M,M)
+		newPerformance=oldPerformance + deltaMu
+
+	if random < pProfileSwitch:
+		newProfile
+
+# <------------- Initialisation ------------->
+function setup:
+
+	##Consumers
+	for j in (trustModel):
+		for i in range(Nc):
+			a <- unique id
+			add new ConsumerAgent (model=j , idC=a , position= random)
+
+	##Providers
+	for i in range(goodPNb):
+		p<- new ProviderAgent (idF=a, pType= providerType.good,position=random)
+		p.setPerformanceLevel
+		add p
+
+	for i in range(ordinaryPNb):
+		p<- new ProviderAgent (idF=a, pType= providerType.ordinary,position=random)
+		p.setPerformanceLevel
+		add p
+
+	for i in range(badPNb):
+		p<- new ProviderAgent (idF=a, pType= providerType.bad,position=random)
+		p.setPerformanceLevel
+		add p
+	for i in range(intermittentPNb):
+		p<- new ProviderAgent (idF=a, pType= providerType.intermittent,position=random)
+		p.setPerformanceLevel
+		add p
+
+
+
+
+# <------------- Main loop ------------->
+function go :
+
+	foreach agentC:
+		if random < activityLevel:
+			provider <- searchProvider
+			interactWith(provider)
+
+	foreach agentF:
+		switchBehaviour
+
+	foreach agentC:
+		randomMove
+
+	randomSetup
+	interactionRounds ++ ##Ticks ++
+
+	if(interactionRounds>roundsNb):
+		STOP
+
+	deleteOldRatings

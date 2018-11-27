@@ -1,0 +1,67 @@
+21.11.18
+
+Fait : 
+• calcul du nouveau ug en fonction de la distance qui sépare le c et le provider
+-> Si le consommateur n'est pas dans le rayon dd'op du provider, on diminue 
+	l'utilité proportionnellement à la distance.
+	-> A vérifier : est ce qu'on prend toute la distance ou juste 
+		la difference entre la distance et le rayon
+	-> Le facteur de régression (regardes la formule et dis moi si ça te paraît cohérent)
+
+• Changement intervalle rayon d'opération
+-> Du coup j'ai aussi changé l'échelle des rayons d'opération 
+(t'avais mis random entre 0.1*shape-size et 0.2*shape-size 
+c'était vraiment minuscule par rapport à la taille de la sphère
+j'ai mis de 0.25 à 0.5 plutot)
+
+• déplacement aléatoire d'un agent
+-> Random move : en fonction d'un random on bouge un peu les agents
+	Voir si les conversions entre polaire et cartesiens sont correctes
+
+• Ajout de slider pour  H et le nombre d'interaction (réglable)
+
+• A chaque fois que j'ai mis à verifier c'est que j'ai fait des suppositions donc peut être que les erreurs viennent de là mais pour l'instant ne touche pas
+
+• Je  viens de voir que la liste has-trust-value reste vide. C'est pour ça qu'il n'y a pas de différence entre les agents FIRE et les agents Notrust
+	Cette erreur vient du fait que dans select provider quand on fait le tri
+	il faut mettre provider x au lieu de x seulement (à la ligne de 'ifelse has-ratings? x')
+	mais ça genère des erreurs donc si tu règle ça ça doit être bon
+	En fait le souci c'est qu'on s'embrouille entre utiliser l'identifiant du provider 
+	ou le provider lui même. 
+
+• Pour l'instant le dynamisme n'y est pas (personne ne bouge). 
+J'ai tout mis en commentaire parce que on en a pas besoin pour cette partie.
+
+22.11.18
+• Problems (has trust value vide + bug calculs exp) fixed
+• La moyenne des UGs monte puis redescend après une trentaine d'itérations 
+(du surement à un H trop petit)
+• Température à vérifier
+• Problème avec p-exploit -> Monte trop vite à 0.5 (mais peut etre que c'est normal)
+	On a bien er-exploit petit au début et augmente
+			et er-explore est statique ( car on prend tous les providers du monde. 
+			Il faut peut être prendre juste les providers qu'il connaît - pas logique)
+
+23.11.18
+• liste ugs vidés à chaque rounds
+• Suppression temporaire de la diminution de l'ug si hors du rayon d'opération
+• Ajout de sliders poru les agents
+• T doit être compris entre 1.02 et 1.60 environ
+
+• Correction du calcul de distance (great circle distance)
+• Prise en compte de l'éloignement quand calcul des expected result
+• Plusieurs tests pour calibrer les paramètres
+
+25.11.18
+• Fixed T=0.00015 when T <= 0 but this statement is never reached even though we used T -= 0.00015
+• *cri de joie* Enfin, atteint 4.xx IT en utilisant T = initialTemperature * ((999 / 1000) ^ (ticks))
+• Ask-neighbours added
+
+26.11.18
+• T *= 999/1000
+• Généralisation des fonctions en fonction du component K
+• Attention ! On a une reliability nulle quand on utilise seulement IT
+	car weightSum trèèèèèès faible donc on utilise pas quand seulementIT
+• TODO Voir si meme erreur avec WR
+• Commentaires
+• Première version IT-WR implémenté (à tester - trop lent)

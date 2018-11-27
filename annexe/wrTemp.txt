@@ -1,0 +1,162 @@
+# Only to add WR component 
+# To do : how to combine both components ? 
+# Which weight do we give  ? When do we set the evaluation process ?
+# What if we already have ratings n our local database ?
+
+# <------------- FUNCTIONS ------------->
+def getT(a,b):
+	weightSum = 0
+	T = 0
+	for each Componentk
+		Tk=getTrustValue(k,Rab)
+		w = getComponentCoef (k)  * getReliability (k,Rab,Tk)
+		T += w*Tk
+		weightSum +=w
+	T /= weightSum
+
+	return T
+
+
+def getTk(k,Rab):
+	somme=0
+	weightSum=0
+	foreach r dans Rab:
+		weight=getWeight(k,r)
+		weightSum+=weight
+		somme+=weight*r[v]
+
+	return somme/weightSum	
+
+def getWeight(K,r):
+	if(k==Component.IT or k==Component.WR):
+		return (exp(-1*this.tick-r[i])/lambdaIT)
+
+
+
+
+#Reliability for trust value
+def getReliability(k,Rab,Tk):
+	if(k==Component.IT):
+		gamma =gammaI
+		RList <- RI(a,b,c)
+	if(k==Component.WR):
+		gamma = gammaWR
+		RList <- RW(a,b,c)
+	if(k==Component.CR):
+		gamma=gammaCR
+		RList <- RC(a,b,c)
+	
+	pD=0
+
+	weightSum=0
+	foreach r dans R(a,b,c):
+		weight=getWeight(k,r)
+		weightSum+=weight
+		pD+= weight * abs (r[v] - Tk)
+	
+	pD = 1 - pD/(2*weightSum)
+	pR=1-exp(-1*gamma*weightSum)
+	return pR*pD
+
+
+def hasRatings(p) :
+
+	wRatings = evaluationProcessWR(p)
+	#FAUX ratings.append(wRatings)
+
+	if ratings.contains(p):
+		return True
+
+## select provider 
+
+def searchProvider:
+
+	## without a trustModel we select randomly
+	if modele == NoTrust:
+		return selectRandomProvider()
+
+
+	if modele == FIRE:
+		#Separate known and unknown providers
+		foreach providers p:
+			if (not hasRatings(p)):
+				noTrustValue <- p
+			else
+				hasTrustValue <- p
+		
+		if(hasTrustValue==empty):
+			return selectRandomProvider()
+		if(noTrustValue==empty):
+			return selectBestProvider()
+		
+
+		# store the best known provider
+		bestP <- selectBestProvider()
+		#expected performance value from this best provider
+		ER_a1 <- getT(self,bestP)
+
+		averageUG=0
+		foreach provider p:
+			averageUG+=meanOf(p.pType.intervalle)
+		averageUG /= totalPNb
+
+		#expected performance value from all providers (known and unknown)
+		ER_a2 <- averageUG
+		#Two choices:
+		#a2 selectRandomProvider	(explore)
+		#a1 selectBestProvider		(exploit)
+
+		#Temperature parameter decreases
+		T/=1.5
+
+		#Proba of choosing option 1 (exploit)
+		pA1=(exp(ER_a1/T))/((exp(ER_a1/T))+(exp(ER_a2/T)))
+
+		if (random (0,1 )< pA1):
+			return bestP
+		else:
+			return selectRandomProvider()
+
+
+# Choose best provider by selecting max of trust values
+def selectBestProvider():
+	bestV=-1000
+	bestP=None
+	foreach p in hasTrustValue:
+		trustValue=getT(self,p)
+		if( trustValue> bestV):
+			bestV <- trustValue
+			bestP<-p
+	############ call function : evaluationProcessWR ([], bestP, nBF, nRL, self.notesForBestP ?) not sure about this
+	return bestP
+
+
+def evaluationProcessWR(provider):
+	chain=0
+	witnessNb=0
+	ratingsList= []
+	acquaintances = []
+
+	#Initialization with his nearest neighbours
+	while nbAcquaintances < nbF : 
+		acquaintances += choose nextNearestConsumer
+
+	while (witnessNb < nBF and chain < nRL)
+		chain ++
+		ask firstnBFacquaintances 
+			acquaintances.remove(self)
+			if matchingRatingsFound :
+				ratingsList.append (ratings)
+				#If he had an interaction he is a witness
+				witnessNb ++
+			else
+				acquaintances.append (listOFnewAcquaintances)
+	RW = ratingsList
+	TW = getTrustValue (RW)
+	end
+
+	
+
+
+
+
