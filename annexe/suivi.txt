@@ -65,3 +65,13 @@ J'ai tout mis en commentaire parce que on en a pas besoin pour cette partie.
 • TODO Voir si meme erreur avec WR
 • Commentaires
 • Première version IT-WR implémenté (à tester - trop lent)
+
+27.11.18
+• Problème 1 : Trop lent (vient de wr-evaluation qui est trop lent ? Ou du nombre de providers à select-rpovider ?)
+• Problème 2 : courbe descend au bout de 40 ticks ?
+• maxD * 4 à préciser dans le rapport
+
+• Problème 1 réglé à moitié (on triche on diminue le nRL et nBF) on a changé la liste des providers dans selectprovider (juste le voisinage)
+• Problème 2 pas réglé A FAIRE
+• er explore changé aussi (random parmi les n-connus)
+• Fatigué.

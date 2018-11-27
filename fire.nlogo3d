@@ -10,8 +10,8 @@ globals [
   ;;rangeActivityLevel?
   ;H
   lambdaIT
-  nBF
-  nRL
+  ;nBF
+  ;nRL
   wI wR wW wC
   gammaI gammaR gammaW gammaC
   PL-PERFECT PL-GOOD PL-OK PL-BAD PL-WORST
@@ -23,6 +23,7 @@ globals [
   UGs-ITWRCR
   provider-type
   trust-model
+
   component
   cptP
   pCPC
@@ -64,6 +65,7 @@ consummers-own [
 	has-trust-value ;;list
 	no-trust-value ;; list
   T ;; temperature
+  wr-evaluations
 
 ]
 
@@ -78,11 +80,10 @@ to setup
   clear-all
   ;;setup all statics variables
   set shape-size 1000.0
-
+  ;set shape-size 1.0
   set H 10
   set lambdaIT -5 / ln(0.5)
-  set nBF 2
-  set nRL 5
+
   set wI 2
   set wR 2
   set wW 1
@@ -116,9 +117,6 @@ to setup
   set pProfileSwitch 0.02
   set maxAngD pi / 20
   set cptP 0
-  ;set Nc 500
-  set choiceExp [0]
-  set choiceExp2 [0]
 
   if no-trust [add-consumer Nc "NoTrust"]
   if it-only [add-consumer Nc "IT"]
@@ -133,12 +131,12 @@ to setup
     show "There must be consumers"
     stop]
 
-  ;;Setting the maximum (and mean) distance that can separate two agents
+  ;;Setting the maximum (and mean) distance that can separate a provider nd a consumer
   ;;(for decreasing UG when out of range)
   let maxD 0
   set meanD 0
   let i 0
-  ask turtles [
+  ask providers [
     let x x-pos
     let y y-pos
     let z z-pos
@@ -151,10 +149,12 @@ to setup
   ]
   set meanD meanD / i
 
-  set maxD maxD * 4 ;; si on met maxD * 8 Meilleurs résultats mais ça doit pas ê la solution
-   ;; 4 a été choisi de manière arbitraire
-  set alpha  (1 / (maxD ))
+  set maxD maxD * 100
+  ;; 4 paramètre déterminé arbitrairement (il determine l'impact de la distance sur l'ug
+  ; plus il est grand moins l'ug sera modifiée et vice versa)
 
+  ;set alpha  (1 / (maxD ))
+  set alpha 1 / maxD
 
   reset-ticks
 end
@@ -171,7 +171,10 @@ to add-consumer [number tmodel]
       [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
     setxyz x-pos y-pos z-pos
     ;set radius shape-size * vary 0.1 0.2
+    ;set radius shape-size * vary 5 7
+
     set radius shape-size * vary 5 7
+
     set color violet
     set activity-level vary 0.25 1.00
     set ratings []
@@ -179,6 +182,9 @@ to add-consumer [number tmodel]
     set has-trust-value []
     set no-trust-value []
     set T initialTemperature
+
+    if t-model = "ITWR" or t-model = "ITWRCR" [set wr-evaluations []]
+
   ]
 end
 
@@ -191,8 +197,11 @@ to add-provider [number ptype]
       [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
       [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
     setxyz x-pos y-pos z-pos
-    ;;set radius shape-size * vary 0.1 0.2
+    ;set radius shape-size * vary 0.1 0.2
     set radius shape-size * vary 5 7
+
+    ;set radius meanD * vary 0.5 1.5
+    ;show radius
     set received-ratings []
 
     setup-provider-type ptype
@@ -220,6 +229,8 @@ to set-default-parameters
   set badP-number 45
   set Nc 500
   set rounds-number 500
+  set nBF 2
+  set nRL 5
 end
 
 ;_________________________ enum provider type ________________
@@ -248,8 +259,8 @@ to-report vary [ #min #max ]  ; random float in given range
 end
 
 to-report great-distance [x1 y1 z1 x2 y2 z2]
-  ; y1 * y1 ? ^^
-  ;let dotproduct (x1 * x2 + y1 * y1 + z1 * z2)/(shape-size ^ 2) ; normalized
+
+  ;let dotproduct (x1 * x2 + y1 * y2 + z1 * z2)/(shape-size ^ 2) ; normalized
   ;report acos(dotproduct) * shape-size
 
   ;; Jehyankaa
@@ -262,7 +273,8 @@ to-report great-distance [x1 y1 z1 x2 y2 z2]
 
   let D  (sin ( (lat2 - lat1) / 2) ) ^ 2 + ( cos lat1 * cos lat2 * (sin ((lon2 - lon1) / 2) ) ^ 2 )
   set D 2 * shape-size * asin (sqrt D)
-  report D
+
+  report abs D
 end
 
 ;Will report the difference (in UG units)
@@ -301,18 +313,17 @@ end
 
 
 to-report ug-out-of-range [ug great-d]
-  ; shape-size * 5 is the minimum ro that can have any agent (1000 * 5 = 5000)
-  ;Do we take the distance between the two agents - the operating radius
-  ;let maxdiff maxD - ( shape-size * 5 )
-
   ;let new-ug ug - ug * (great-d - ro) / maxdiff
   ;;Or just the distance ?
   ;let new-ug ug - ug * great-d / maxdiff
-  let new-ug (ug - (abs ug * great-d * alpha) )
-  if new-ug < -10 [set new-ug -10]
-  if new-ug > 10 [set new-ug 10]
+  ;show great-d * alpha
 
-  ;show new-ug
+  let new-ug (ug - (abs ug * great-d * alpha) )
+
+
+  ;let new-ug (ug - great-d * alpha)
+  if new-ug < -10 [set new-ug -10]
+
   report new-ug
 end
 
@@ -353,7 +364,15 @@ to-report get-rates [k b]
   ]
 
   if k = "WR" [
-    set r-ab wr-evaluation b]
+    foreach wr-evaluations [
+      wr-ev ->
+      if item 0 wr-ev = b [
+        set r-ab item 1 wr-ev
+        report r-ab
+      ]
+    ]
+    ;set r-ab wr-evaluation b
+  ]
   report r-ab
 end
 
@@ -381,6 +400,7 @@ to-report get-t-value [b]
   foreach components [
     k ->
 
+
     set r-ab get-rates k b
 
     if length r-ab > 0 [
@@ -391,8 +411,8 @@ to-report get-t-value [b]
       set weight-sum weight-sum + w
     ]
 
-
   ]
+
   if (weight-sum = 0) [set weight-sum 1]
 
   set t-value (t-value / weight-sum)
@@ -416,7 +436,7 @@ to-report get-t-value-by-component [k r-ab]
     ;Get the real expectation (considering distance)
     set ug ug + ug-difference ug item 0 r item 1 r
     ;Back to rating value range
-    set v v / 10
+    ;if k = "WR" [set v ug / 10]
 
     let weight get-weight k r
 		set weight-sum (weight-sum + weight)
@@ -450,7 +470,7 @@ to-report get-reliability [k b t-value]
     ;Get the real expectation (considering distance)
     set ug ug + ug-difference ug item 0 r item 1 r
     ;Back to rating value range
-    set v v / 10
+    ;if k = "WR" [set v ug / 10]
 
     let weight get-weight k r
 		set weight-sum (weight-sum + weight)
@@ -556,8 +576,26 @@ to-report get-neighbours
   ask consummers [
     let d great-distance x y z x-pos y-pos z-pos
     ;do not add self to the list
-    if ((not (who = myId)) and (d < r))
-    [ set neighbours lput who neighbours ]
+    if ((not (who = myId)) and (d <= r))
+    [
+      set neighbours lput who neighbours ]
+  ]
+  report neighbours
+end
+
+to-report get-neighbours-in-circle [r]
+  let neighbours []
+  let x x-pos
+  let y y-pos
+  let z z-pos
+  let myId who
+
+  ask consummers [
+    let d great-distance x y z x-pos y-pos z-pos
+    ;do not add self to the list
+    if ((not (who = myId)) and (d <= r))
+    [
+      set neighbours lput who neighbours ]
   ]
   report neighbours
 end
@@ -565,7 +603,12 @@ end
 ; get a random provider (wherever he is, whatever his type is)
 to-report select-random-provider
   let id 0
-  ask one-of providers [set id who]
+  ifelse no-trust-value = [] [
+    ask one-of providers [set id who ]
+  ]
+  [
+    set id one-of no-trust-value
+  ]
   report id
 end
 
@@ -597,7 +640,7 @@ to-report get-acquaintances-neighbours [b seen-consumers]
     ]
   ]
 
-  if (length res < nBF) [ set res sublist res 0 nBF ]
+  if (length res > nBF) [ set res sublist res 0 nBF ]
 
   report res
 end
@@ -618,7 +661,7 @@ to-report select-best-provider
       let r-ab get-rates "IT" x
       set t-value get-t-value-by-component t-model r-ab
     ]
-
+    ;; If the t-model is not "IT" it can only be ITWR or ITWRCR (cause NoTrust consumers won't select best provider)
     [
 
       set t-value get-t-value x]
@@ -638,32 +681,47 @@ to-report select-provider
   ]
 
   [
-    let witness-ratings []
+    let c-x-pos x-pos
+    let c-y-pos y-pos
+    let c-z-pos z-pos
+    let myro radius
+    ;let witness-ratings []
+    let witness-ratings false
     let providersIds []
+
     ask providers [
-      set providersIds lput who providersIds
+      ;If provider is nearby (in ro) we add to the list
+      if (great-distance x-pos y-pos z-pos c-x-pos c-y-pos c-z-pos < myro)
+      [set providersIds lput who providersIds]
     ]
+
     ;Back to empty list (because some ratings have been deleted + dynamism)
     set has-trust-value []
     set no-trust-value []
+    let r-ab-i []
+    let r-ab-c []
+    let r-ab-w []
+
+    if (t-model = "ITWR" or t-model = "ITWRCR") [
+      set wr-evaluations []]
+
     foreach providersIds [
       x ->
 
-      ifelse has-ratings? x [
+      set r-ab-i get-rates "IT" x
+      if (t-model = "ITWR" or t-model = "ITWRCR") [
+        set r-ab-w wr-evaluation x]
 
+      ifelse (length r-ab-i > 0) or (length r-ab-w > 0) [
         set has-trust-value lput x has-trust-value
+        if (length r-ab-w > 0) [
+          set wr-evaluations lput (list x r-ab-w) wr-evaluations
+        ]
+
       ]
 
       [
-        ifelse t-model = "ITWR" [
-          set witness-ratings wr-evaluation x
-
-          ifelse length witness-ratings = 0
-          [set no-trust-value lput x no-trust-value]
-          [set has-trust-value lput x has-trust-value]
-
-        ]
-        [set no-trust-value lput x no-trust-value]
+        set no-trust-value lput x no-trust-value
       ]
 
     ]
@@ -678,8 +736,8 @@ to-report select-provider
 
     let r-ab get-rates "IT" best-p
     ifelse t-model = "IT" [set t-value get-t-value-by-component t-model r-ab]
-
     [set t-value get-t-value best-p]
+
     ;;er-exploit gets best trust value ([-1;1]
     let er-exploit t-value
 
@@ -688,18 +746,26 @@ to-report select-provider
 
 
     let average-ug 0
-    let nb-providers 0
-    let average-ugs []
+    let known-providers sentence has-trust-value no-trust-value
+    foreach known-providers [
+      p ->
+      ask provider p [
+        let ppt get-type-properties p-type
+        set average-ug average-ug + mean sublist ppt 0 2
+      ]
+    ]
+    set average-ug average-ug / length no-trust-value
 
-    let er-explore mean [performance-level] of providers
+    let er-explore average-ug
     ; we consider the distance of the agent for estimated result
     ; this consideration will be in get-t-value also
-    set er-explore ug-out-of-range er-explore meanD
+    ;set er-explore ug-out-of-range er-explore meanD
 
     let temp-coef (999 / 1000)
-    ;let alpha (( 10 * rounds-number - 1) / (10 * rounds-number))
-
-    set T initialTemperature * (temp-coef ^ (ticks))
+    ;let temp-coef (( 10 * rounds-number - 1) / (10 * rounds-number))
+    ;set T T - 1
+    set T T * temp-coef
+    ;set T initialTemperature * (temp-coef ^ (ticks))
     ;set T T - (1 / (rounds-number * 10))
     ;set T initialTemperature - (ticks * 0.00015)
 
@@ -714,9 +780,7 @@ to-report select-provider
 
     set b1 (a1 + b1)
     let p-exploit (a1 / b1)
-    ;;For debug
-    set choiceExp lput p-exploit choiceExp
-    ;set choiceExp2 lput (2 * a1 - b1) choiceExp
+
     let r random-float 1.0
 
     ifelse r < p-exploit
@@ -817,7 +881,6 @@ end
 ;_________________________ interaction ________________
 
 to interact-with [b]
-  ;let p b of providers
   let ug 0
   let x1 x-pos
   let y1 y-pos
@@ -834,9 +897,11 @@ to interact-with [b]
     [
       let ppt get-type-properties p-type
       set ug random-normal performance-level item 2 ppt
+      if (ug < -10) [set ug -10]
+      if (ug > 10) [set ug 10]
     ]
 
-    let d abs great-distance x-pos y-pos z-pos x1 y1 z1
+    let d great-distance x-pos y-pos z-pos x1 y1 z1
 
     if d > radius [
       ;; if outside of the provider’s normal operational, uG degraded linearly
@@ -878,8 +943,10 @@ to go
     if length ratings > H [delete-old-ratings]
 
     if random-float 1.0 < activity-level [
+
       let prov select-provider
       interact-with provider prov
+
 
     ]
 
@@ -921,7 +988,7 @@ GRAPHICS-WINDOW
 -50
 50
 1
-0
+1
 1
 ticks
 30.0
@@ -1029,8 +1096,8 @@ SLIDER
 Nc
 Nc
 0
-500
-57.0
+1000
+500.0
 1
 1
 NIL
@@ -1200,6 +1267,28 @@ it-wr
 0
 1
 -1000
+
+INPUTBOX
+40
+419
+99
+479
+nBF
+1.0
+1
+0
+Number
+
+INPUTBOX
+125
+419
+184
+479
+nRL
+2.0
+1
+0
+Number
 
 @#$#@#$#@
 ## WHAT IS IT?
