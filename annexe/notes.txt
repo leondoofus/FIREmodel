@@ -94,3 +94,12 @@ to-report collect-ratings-neighbours [list-neighbours-asked a b depth width res]
     report res
   ]
 end
+
+Méthod to recover the expected ug from a witness rating (considering distance)
+ug1 = ug - ...
+ug2 = ug - ...
+Somme :
+ug2 - ug1 = (d2 - d1) / 4m
+
+Justifier à chaque fois qu'on l'utilise ! (pareil pour les x10 /10)
+

@@ -34,8 +34,10 @@ globals [
   pProfileSwitch
   maxAngD
   ;;Max distance that can have two agents
-  maxD
+  ;maxD
   meanD
+  ;; coefficient for the decrease of ug due to distance
+  alpha
 
   ;; to plot decision between exploit and explore
   choiceExp
@@ -76,10 +78,7 @@ to setup
   clear-all
   ;;setup all statics variables
   set shape-size 1000.0
-  ;set goodP-number 10
-  ;set ordinaryP-number 40
-  ;set intermittentP-number 5
-  ;set badP-number 45
+
   set H 10
   set lambdaIT -5 / ln(0.5)
   set nBF 2
@@ -121,18 +120,22 @@ to setup
   set choiceExp [0]
   set choiceExp2 [0]
 
-  add-consumer Nc "NoTrust"
-  add-consumer Nc "IT"
-  add-consumer Nc "ITWR"
+  if no-trust [add-consumer Nc "NoTrust"]
+  if it-only [add-consumer Nc "IT"]
+  if it-wr [add-consumer Nc "ITWR"]
 
   add-provider goodP-number "good"
   add-provider ordinaryP-number "ordinary"
   add-provider badP-number "bad"
   add-provider intermittentP-number "intermittent"
 
+  if count consummers = 0 [
+    show "There must be consumers"
+    stop]
+
   ;;Setting the maximum (and mean) distance that can separate two agents
   ;;(for decreasing UG when out of range)
-  set maxD 0
+  let maxD 0
   set meanD 0
   let i 0
   ask turtles [
@@ -147,6 +150,10 @@ to setup
     ]
   ]
   set meanD meanD / i
+
+  set maxD maxD * 4 ;; si on met maxD * 8 Meilleurs résultats mais ça doit pas ê la solution
+   ;; 4 a été choisi de manière arbitraire
+  set alpha  (1 / (maxD ))
 
 
   reset-ticks
@@ -206,6 +213,15 @@ to setup-provider-type [ptype]
 
 end
 
+to set-default-parameters
+  set goodP-number 10
+  set ordinaryP-number 40
+  set intermittentP-number 5
+  set badP-number 45
+  set Nc 500
+  set rounds-number 500
+end
+
 ;_________________________ enum provider type ________________
 to-report get-type-properties [ptype]
 
@@ -249,17 +265,50 @@ to-report great-distance [x1 y1 z1 x2 y2 z2]
   report D
 end
 
+;Will report the difference (in UG units)
+;between a performance (ug) given by the provider (p) to another consumer (witness) and
+;the performance the agent expects to receive
+to-report ug-difference [ug witness p]
+  let p-x-pos 0
+  let p-y-pos 0
+  let p-z-pos 0
+
+  let c-x-pos 0
+  let c-y-pos 0
+  let c-z-pos 0
+
+  ;; get provider position
+  ask provider p [
+    set p-x-pos x-pos
+    set p-y-pos y-pos
+    set p-z-pos z-pos
+  ]
+  ;; get witness position
+  ask consummer witness [
+    set c-x-pos x-pos
+    set c-y-pos y-pos
+    set c-z-pos z-pos
+  ]
+  ;distance between witness & provider
+  let d1 great-distance c-x-pos c-y-pos c-z-pos p-x-pos p-y-pos p-z-pos
+
+  ;distance between me & provider
+  let d2 great-distance x-pos y-pos z-pos p-x-pos p-y-pos p-z-pos
+
+
+  report (d2 - d1) * alpha
+end
+
 
 to-report ug-out-of-range [ug great-d]
   ; shape-size * 5 is the minimum ro that can have any agent (1000 * 5 = 5000)
   ;Do we take the distance between the two agents - the operating radius
-  let maxdiff maxD - ( shape-size * 5 )
+  ;let maxdiff maxD - ( shape-size * 5 )
 
   ;let new-ug ug - ug * (great-d - ro) / maxdiff
   ;;Or just the distance ?
   ;let new-ug ug - ug * great-d / maxdiff
-  let new-ug (ug - (abs ug * great-d / (maxD * 4) ) ) ;; si on met maxD * 8 Meilleurs résultats mais ça doit pas ê la solution
-
+  let new-ug (ug - (abs ug * great-d * alpha) )
   if new-ug < -10 [set new-ug -10]
   if new-ug > 10 [set new-ug 10]
 
@@ -335,9 +384,8 @@ to-report get-t-value [b]
     set r-ab get-rates k b
 
     if length r-ab > 0 [
-      let tks get-t-value-by-component k r-ab
-      let reliability item 1 tks
-      let tk item 0 tks
+      let tk get-t-value-by-component k r-ab
+      let reliability get-reliability k b tk
       let w ( (get-component-coef k) * reliability )
       set t-value (t-value + w * tk)
       set weight-sum weight-sum + w
@@ -355,33 +403,64 @@ end
 ;;T-value for the component k from the list r-ab
 ;;will return a list of 2 elements : first is trust value and second is reliability
 to-report get-t-value-by-component [k r-ab]
-  let gamma gammaI
 
-	if(k = "WR")[
+  let t-value 0
+  let weight-sum 0
+
+  foreach r-ab [
+    r ->
+    ;Rating between -1 et 1
+    let v item 3 r
+    ;Associated ug (x 10)
+    let ug v * 10
+    ;Get the real expectation (considering distance)
+    set ug ug + ug-difference ug item 0 r item 1 r
+    ;Back to rating value range
+    set v v / 10
+
+    let weight get-weight k r
+		set weight-sum (weight-sum + weight)
+		set t-value t-value + (weight * v)
+
+  ]
+
+  set t-value (t-value / weight-sum)
+  report t-value
+
+end
+
+to-report get-reliability [k b t-value]
+  let gamma gammaI
+  let r-ab get-rates k b
+	if k = "WR"[
     set gamma gammaW
   ]
-	if(k = "CR")[
+	if k = "CR"[
     set gamma gammaC
   ]
 
-  let t-value 0
   let weight-sum 0
   let p-d 0
   foreach r-ab [
     r ->
-    let weight get-weight k r
+    ;Rating between -1 et 1
+    let v item 3 r
+    ;Associated ug (x 10)
+    let ug v * 10
+    ;Get the real expectation (considering distance)
+    set ug ug + ug-difference ug item 0 r item 1 r
+    ;Back to rating value range
+    set v v / 10
 
+    let weight get-weight k r
 		set weight-sum (weight-sum + weight)
-    set p-d p-d + weight * abs (item 3 r - t-value)
-		set t-value t-value + (weight * item 3 r)
+    set p-d p-d + weight * abs (v - t-value)
   ]
 
 	set p-d 1 - (p-d / (2 * weight-sum))
 	let pr 1 - (exp (-1 * gamma * weight-sum))
 
-  set t-value (t-value / weight-sum)
-  report (list t-value (pr * p-d))
-
+  report pr * p-d
 end
 
 to-report get-weight [k r]
@@ -447,7 +526,7 @@ to-report wr-evaluation [b]
         [
           ;Everyone puts the neighbours he have in new acquaintanes
           let my-neighbours (get-acquaintances-neighbours b seen-consumers)
-          ;;TODO get nBF acquaintances exactly (if one of my acquaintances is already in the list I replace it with another one
+
           foreach my-neighbours[
             n ->
             if (not member? n new-acquaintances) [set new-acquaintances lput n new-acquaintances]
@@ -508,20 +587,17 @@ to-report get-acquaintances-neighbours [b seen-consumers]
 
   set neighbours-details reverse sort-with [ l -> item 1 l ] neighbours-details
 
-  if length neighbours-details > nBF [
-
-    set neighbours-details sublist neighbours-details 0 nBF
-  ]
-
   let res []
   let agenttmp 0
   foreach neighbours-details
   [n ->
     set agenttmp item 0 n
-    if (length res < nBF) and (not member? agenttmp seen-consumers) [
+    if (not member? agenttmp seen-consumers) [
       set res lput agenttmp res
     ]
   ]
+
+  if (length res < nBF) [ set res sublist res 0 nBF ]
 
   report res
 end
@@ -540,7 +616,7 @@ to-report select-best-provider
     ifelse t-model = "IT" [
 
       let r-ab get-rates "IT" x
-      set t-value item 0 (get-t-value-by-component t-model r-ab)
+      set t-value get-t-value-by-component t-model r-ab
     ]
 
     [
@@ -601,7 +677,7 @@ to-report select-provider
     ;if IT only no need to combine composants
 
     let r-ab get-rates "IT" best-p
-    ifelse t-model = "IT" [set t-value item 0 (get-t-value-by-component t-model r-ab)]
+    ifelse t-model = "IT" [set t-value get-t-value-by-component t-model r-ab]
 
     [set t-value get-t-value best-p]
     ;;er-exploit gets best trust value ([-1;1]
@@ -616,13 +692,14 @@ to-report select-provider
     let average-ugs []
 
     let er-explore mean [performance-level] of providers
-
+    ; we consider the distance of the agent for estimated result
+    ; this consideration will be in get-t-value also
     set er-explore ug-out-of-range er-explore meanD
 
-    let alpha (999 / 1000)
+    let temp-coef (999 / 1000)
     ;let alpha (( 10 * rounds-number - 1) / (10 * rounds-number))
 
-    set T initialTemperature * (alpha ^ (ticks))
+    set T initialTemperature * (temp-coef ^ (ticks))
     ;set T T - (1 / (rounds-number * 10))
     ;set T initialTemperature - (ticks * 0.00015)
 
@@ -780,7 +857,8 @@ to interact-with [b]
 
   ;store
   set ratings lput (list who provider-id ticks r-value) ratings
-  ask b [ set received-ratings lput (list who ticks r-value) received-ratings ]
+  let a who
+  ask b [ set received-ratings lput (list a ticks r-value) received-ratings ]
 
 end
 
@@ -952,7 +1030,7 @@ Nc
 Nc
 0
 500
-38.0
+57.0
 1
 1
 NIL
@@ -967,7 +1045,7 @@ goodP-number
 goodP-number
 0
 100
-4.0
+10.0
 1
 1
 NIL
@@ -982,7 +1060,7 @@ ordinaryP-number
 ordinaryP-number
 0
 100
-6.0
+40.0
 1
 1
 NIL
@@ -997,7 +1075,7 @@ intermittentP-number
 intermittentP-number
 0
 100
-2.0
+5.0
 1
 1
 NIL
@@ -1012,7 +1090,7 @@ badP-number
 badP-number
 0
 100
-9.0
+45.0
 1
 1
 NIL
@@ -1072,6 +1150,56 @@ count consummers
 17
 1
 11
+
+BUTTON
+695
+129
+783
+162
+DEFAULT
+set-default-parameters
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+SWITCH
+731
+212
+841
+245
+no-trust
+no-trust
+1
+1
+-1000
+
+SWITCH
+778
+274
+881
+307
+it-only
+it-only
+1
+1
+-1000
+
+SWITCH
+768
+323
+871
+356
+it-wr
+it-wr
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
