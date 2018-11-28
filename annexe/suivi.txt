@@ -75,3 +75,6 @@ J'ai tout mis en commentaire parce que on en a pas besoin pour cette partie.
 • Problème 2 pas réglé A FAIRE
 • er explore changé aussi (random parmi les n-connus)
 • Fatigué.
+
+28.11.18
+• Quelques paramètres ont été changé pour voir d'où vient la baisse à 40 itération -> Température, Nc, choice between expls (pA1-pA2) (et c'est pas tout ça donc voir d'où ça peut venir d'autre)
