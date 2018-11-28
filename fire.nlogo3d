@@ -34,9 +34,6 @@ globals [
   pMuC
   pProfileSwitch
   maxAngD
-  ;;Max distance that can have two agents
-  ;maxD
-  meanD
   ;; coefficient for the decrease of ug due to distance
   alpha
 
@@ -117,6 +114,13 @@ to setup
   set pProfileSwitch 0.02
   set maxAngD pi / 20
   set cptP 0
+  ;;Setting the maximum distance that can separate a provider nd a consumer
+  ;;(for decreasing UG when out of range)
+  let maxD shape-size * pi
+   ;set maxD maxD * 100
+  ;; 4 paramètre déterminé arbitrairement (il determine l'impact de la distance sur l'ug
+  ; plus il est grand moins l'ug sera modifiée et vice versa)
+  set alpha 1 / maxD
 
   if no-trust [add-consumer Nc "NoTrust"]
   if it-only [add-consumer Nc "IT"]
@@ -131,45 +135,17 @@ to setup
     show "There must be consumers"
     stop]
 
-  ;;Setting the maximum (and mean) distance that can separate a provider nd a consumer
-  ;;(for decreasing UG when out of range)
-  let maxD 0
-  set meanD 0
-  let i 0
-  ask providers [
-    let x x-pos
-    let y y-pos
-    let z z-pos
-    ask consummers [
-      let d great-distance x-pos y-pos z-pos x y z
-      if d > maxD [set maxD d]
-      set i i + 1
-      set meanD meanD + d
-    ]
-  ]
-  set meanD meanD / i
+  ask providers [show length get-neighbours]
 
-  set maxD maxD * 100
-  ;; 4 paramètre déterminé arbitrairement (il determine l'impact de la distance sur l'ug
-  ; plus il est grand moins l'ug sera modifiée et vice versa)
 
-  ;set alpha  (1 / (maxD ))
-  set alpha 1 / maxD
 
-  ask turtles [set-radius]
+
+
 
   reset-ticks
 end
 
-to set-radius
- let x 0.05
- let y 0.1
- if (breed = providers) [
-    show who
-    set x 0.02
-    set y 0.04]
- set radius meanD * vary x y
-end
+
 
 to add-consumer [number tmodel]
   create-consummers number
@@ -181,6 +157,7 @@ to add-consumer [number tmodel]
       [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
     setxyz x-pos y-pos z-pos
 
+    set radius shape-size * vary 0.3 0.6
     set color violet
 
     set activity-level vary 0.25 1.00
@@ -204,6 +181,9 @@ to add-provider [number ptype]
       [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
       [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
     setxyz x-pos y-pos z-pos
+
+    set radius shape-size * vary 0.2 0.4
+
     set received-ratings []
 
     setup-provider-type ptype
@@ -278,17 +258,22 @@ to-report great-distance [x1 y1 z1 x2 y2 z2]
   ;report acos(dotproduct) * shape-size
 
   ;; Jehyankaa
-  let latlong get-lat-long x1 y1 z1
-  let latlong2 get-lat-long x2 y2 z2
-  let lat1 item 0 latlong
-  let lat2 item 0 latlong2
-  let lon1 item 1 latlong
-  let lon2 item 1 latlong2
+;  let latlong get-lat-long x1 y1 z1
+;  let latlong2 get-lat-long x2 y2 z2
+;  let lat1 item 0 latlong
+;  let lat2 item 0 latlong2
+;  let lon1 item 1 latlong
+;  let lon2 item 1 latlong2
+;
+;  let D  (sin ( (lat2 - lat1) / 2) ) ^ 2 + ( cos lat1 * cos lat2 * (sin ((lon2 - lon1) / 2) ) ^ 2 )
+;  set D 2 * shape-size * asin (sqrt D)
+  let d2 ((x1 - x2) ^ 2 + (y1 - y2) ^ 2 + (z1 - z2) ^ 2)
+  let res shape-size * asin ( ((sqrt d2) * sqrt (4 * (shape-size ^ 2) - d2)) / (2 * (shape-size) ^ 2))
+  if res > (pi * shape-size) [
+    set res pi * shape-size]
+  report res
 
-  let D  (sin ( (lat2 - lat1) / 2) ) ^ 2 + ( cos lat1 * cos lat2 * (sin ((lon2 - lon1) / 2) ) ^ 2 )
-  set D 2 * shape-size * asin (sqrt D)
-
-  report abs D
+  ;report abs D
 end
 
 ;Will report the difference (in UG units)
@@ -597,22 +582,6 @@ to-report get-neighbours
   report neighbours
 end
 
-to-report get-neighbours-in-circle [r]
-  let neighbours []
-  let x x-pos
-  let y y-pos
-  let z z-pos
-  let myId who
-
-  ask consummers [
-    let d great-distance x y z x-pos y-pos z-pos
-    ;do not add self to the list
-    if ((not (who = myId)) and (d <= r))
-    [
-      set neighbours lput who neighbours ]
-  ]
-  report neighbours
-end
 
 ; get a random provider (wherever he is, whatever his type is)
 to-report select-random-provider
@@ -1277,7 +1246,7 @@ SWITCH
 284
 it-only
 it-only
-0
+1
 1
 -1000
 
@@ -1288,7 +1257,7 @@ SWITCH
 323
 it-wr
 it-wr
-1
+0
 1
 -1000
 
