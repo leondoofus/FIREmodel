@@ -117,7 +117,7 @@ to setup
   ;;Setting the maximum distance that can separate a provider nd a consumer
   ;;(for decreasing UG when out of range)
   let maxD shape-size * pi
-   ;set maxD maxD * 100
+  set maxD maxD * 100
   ;; 4 paramètre déterminé arbitrairement (il determine l'impact de la distance sur l'ug
   ; plus il est grand moins l'ug sera modifiée et vice versa)
   set alpha 1 / maxD
@@ -135,12 +135,6 @@ to setup
     show "There must be consumers"
     stop]
 
-  ask providers [show length get-neighbours]
-
-
-
-
-
 
   reset-ticks
 end
@@ -157,7 +151,7 @@ to add-consumer [number tmodel]
       [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
     setxyz x-pos y-pos z-pos
 
-    set radius shape-size * vary 0.3 0.6
+    set radius shape-size * vary 0.3 1
     set color violet
 
     set activity-level vary 0.25 1.00
@@ -182,7 +176,7 @@ to add-provider [number ptype]
       [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
     setxyz x-pos y-pos z-pos
 
-    set radius shape-size * vary 0.2 0.4
+    set radius shape-size * vary 0.1 0.4
 
     set received-ratings []
 
@@ -216,15 +210,15 @@ to set-default-parameters
 end
 
 to set-small-world
-  set shape-size 100
-  set goodP-number 5
-  set ordinaryP-number 20
-  set intermittentP-number 2
-  set badP-number 23
-  set Nc 300
+  set shape-size shape-size / 5
+  set goodP-number goodP-number / 5
+  set ordinaryP-number ordinaryP-number / 5
+  set intermittentP-number intermittentP-number / 5
+  set badP-number badP-number / 5
+  set Nc Nc / 5
   set rounds-number 200
-  set nBF 2
-  set nRL 5
+  set nBF 1
+  set nRL 2
 end
 
 ;_________________________ enum provider type ________________
@@ -926,7 +920,7 @@ end
 to go
 
   set UGs-IT []
-  set UGs-ITWR []
+  ;set UGs-ITWR []
   set UGs-ITWRCR []
   set UGs-NoTrust []
 
@@ -1050,6 +1044,8 @@ PENS
 "CONTROL (FIRE-IT)" 1.0 0 -14454117 true "" "plot mean UGs-IT"
 "IT-WR" 1.0 0 -13840069 true "" "plot mean UGs-ITWR"
 "IT-WR-CR" 1.0 0 -4757638 true "" "plot mean UGs-ITWRCR"
+"pen-4" 1.0 0 -7500403 true "" "plot 2"
+"pen-5" 1.0 0 -16580092 true "" "plot 0"
 
 SLIDER
 321
@@ -1090,7 +1086,7 @@ Nc
 Nc
 0
 1000
-500.0
+25.0
 1
 1
 NIL
