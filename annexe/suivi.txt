@@ -78,3 +78,8 @@ J'ai tout mis en commentaire parce que on en a pas besoin pour cette partie.
 
 28.11.18
 • Quelques paramètres ont été changé pour voir d'où vient la baisse à 40 itération -> Température, Nc, choice between expls (pA1-pA2) (et c'est pas tout ça donc voir d'où ça peut venir d'autre)
+
+• Ajout de la prise en compte des ugs hors ro (lors de t-value, reliability et lors de l'estimation de er-explore)
+• Configuration du rayon d'opération en fonction du type d'agent (c ou p)
+• Tests, tests, et encore tests
+• J'ai avancé sur le rapport aussi

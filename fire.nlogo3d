@@ -156,10 +156,20 @@ to setup
   ;set alpha  (1 / (maxD ))
   set alpha 1 / maxD
 
+  ask turtles [set-radius]
+
   reset-ticks
 end
 
-
+to set-radius
+ let x 0.05
+ let y 0.1
+ if (breed = providers) [
+    show who
+    set x 0.02
+    set y 0.04]
+ set radius meanD * vary x y
+end
 
 to add-consumer [number tmodel]
   create-consummers number
@@ -170,12 +180,9 @@ to add-consumer [number tmodel]
       [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
       [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
     setxyz x-pos y-pos z-pos
-    ;set radius shape-size * vary 0.1 0.2
-    ;set radius shape-size * vary 5 7
-
-    set radius shape-size * vary 5 7
 
     set color violet
+
     set activity-level vary 0.25 1.00
     set ratings []
     set t-model tmodel
@@ -197,11 +204,6 @@ to add-provider [number ptype]
       [set z-pos -1.0 * sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
       [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
     setxyz x-pos y-pos z-pos
-    ;set radius shape-size * vary 0.1 0.2
-    set radius shape-size * vary 5 7
-
-    ;set radius meanD * vary 0.5 1.5
-    ;show radius
     set received-ratings []
 
     setup-provider-type ptype
@@ -229,6 +231,18 @@ to set-default-parameters
   set badP-number 45
   set Nc 500
   set rounds-number 500
+  set nBF 2
+  set nRL 5
+end
+
+to set-small-world
+  set shape-size 100
+  set goodP-number 5
+  set ordinaryP-number 20
+  set intermittentP-number 2
+  set badP-number 23
+  set Nc 300
+  set rounds-number 200
   set nBF 2
   set nRL 5
 end
@@ -311,17 +325,17 @@ to-report ug-difference [ug witness p]
   report (d2 - d1) * alpha
 end
 
-
-to-report ug-out-of-range [ug great-d]
-  ;let new-ug ug - ug * (great-d - ro) / maxdiff
+;d is the difference between d and ro
+to-report ug-out-of-range [ug d]
+  ;let new-ug ug - ug * (d - ro) / maxdiff
   ;;Or just the distance ?
-  ;let new-ug ug - ug * great-d / maxdiff
-  ;show great-d * alpha
+  ;let new-ug ug - ug * d / maxdiff
+  ;show d * alpha
 
-  let new-ug (ug - (abs ug * great-d * alpha) )
+  let new-ug (ug - (abs ug * d * alpha) )
 
 
-  ;let new-ug (ug - great-d * alpha)
+  ;let new-ug (ug - d * alpha)
   if new-ug < -10 [set new-ug -10]
 
   report new-ug
@@ -436,7 +450,7 @@ to-report get-t-value-by-component [k r-ab]
     ;Get the real expectation (considering distance)
     set ug ug + ug-difference ug item 0 r item 1 r
     ;Back to rating value range
-    ;if k = "WR" [set v ug / 10]
+    if k = "WR" [set v ug / 10]
 
     let weight get-weight k r
 		set weight-sum (weight-sum + weight)
@@ -470,7 +484,7 @@ to-report get-reliability [k b t-value]
     ;Get the real expectation (considering distance)
     set ug ug + ug-difference ug item 0 r item 1 r
     ;Back to rating value range
-    ;if k = "WR" [set v ug / 10]
+    if k = "WR" [set v ug / 10]
 
     let weight get-weight k r
 		set weight-sum (weight-sum + weight)
@@ -745,33 +759,43 @@ to-report select-provider
     set er-exploit er-exploit * 10
 
 
-    let average-ug 0
+    let average-ugs []
     let known-providers sentence has-trust-value no-trust-value
+
+    let my-x x-pos
+    let my-y y-pos
+    let my-z z-pos
+    let distances []
+    let diff 0
     foreach known-providers [
       p ->
       ask provider p [
+        let d great-distance x-pos y-pos z-pos my-x my-y my-z
+        ifelse (d - radius <= 0) [set diff 0] [set diff (d - radius)]
+        set distances lput diff distances
         let ppt get-type-properties p-type
-        set average-ug average-ug + mean sublist ppt 0 2
+        set average-ugs lput (mean sublist ppt 0 2) average-ugs
       ]
     ]
-    set average-ug average-ug / length no-trust-value
+    let average-distance mean distances
+    let average-ug mean average-ugs
 
     let er-explore average-ug
     ; we consider the distance of the agent for estimated result
     ; this consideration will be in get-t-value also
-    ;set er-explore ug-out-of-range er-explore meanD
+    set er-explore ug-out-of-range er-explore mean distances
 
     let temp-coef (999 / 1000)
     ;let temp-coef (( 10 * rounds-number - 1) / (10 * rounds-number))
-    ;set T T - 1
-    set T T * temp-coef
+    set T T - 1
+    ;set T T * temp-coef
     ;set T initialTemperature * (temp-coef ^ (ticks))
     ;set T T - (1 / (rounds-number * 10))
     ;set T initialTemperature - (ticks * 0.00015)
 
     if T <= 0 [
       print "wooooooooo" ;never reach to this statement
-      set T 0.00015]
+      set T 1]
 
 
     let a1 exp (er-exploit / T)
@@ -905,7 +929,7 @@ to interact-with [b]
 
     if d > radius [
       ;; if outside of the provider’s normal operational, uG degraded linearly
-      set ug ug-out-of-range ug d
+      set ug ug-out-of-range ug (d - radius)
     ]
 
 
@@ -950,13 +974,13 @@ to go
 
     ]
 
-    if dynamism-setup [random-move]
+    if dynamism-moves [random-move]
   ]
 
 
   if dynamism-behaviours [ask providers [switch-behaviour]]
 
-  if dynamism-moves [random-setup]
+  if dynamism-setup [random-setup]
 
   if ticks >= rounds-number [stop]
 
@@ -1169,7 +1193,7 @@ INPUTBOX
 498
 155
 initialTemperature
-1.0
+500.0
 1
 0
 Number
@@ -1247,24 +1271,24 @@ no-trust
 -1000
 
 SWITCH
-778
-274
-881
-307
+732
+251
+835
+284
 it-only
 it-only
-1
+0
 1
 -1000
 
 SWITCH
-768
+733
+290
+836
 323
-871
-356
 it-wr
 it-wr
-0
+1
 1
 -1000
 
@@ -1274,7 +1298,7 @@ INPUTBOX
 99
 479
 nBF
-1.0
+2.0
 1
 0
 Number
@@ -1285,10 +1309,38 @@ INPUTBOX
 184
 479
 nRL
-2.0
+5.0
 1
 0
 Number
+
+MONITOR
+733
+457
+790
+502
+NIL
+ticks
+17
+1
+11
+
+BUTTON
+810
+172
+910
+205
+Settings /5
+set-small-world
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
