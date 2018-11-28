@@ -920,7 +920,7 @@ end
 to go
 
   set UGs-IT []
-  ;set UGs-ITWR []
+  set UGs-ITWR []
   set UGs-ITWRCR []
   set UGs-NoTrust []
 
@@ -981,10 +981,10 @@ ticks
 30.0
 
 BUTTON
-519
-50
-592
-83
+506
+15
+579
+48
 NIL
 setup\n
 NIL
@@ -998,10 +998,10 @@ NIL
 1
 
 BUTTON
-523
-97
-586
-130
+507
+56
+570
+89
 NIL
 go\n
 T
@@ -1025,10 +1025,10 @@ réglable : degradation, poids des components
 1
 
 PLOT
-251
-187
-674
-497
+400
+115
+823
+425
 Comparison UG
 Interaction
 UG
@@ -1048,10 +1048,10 @@ PENS
 "pen-5" 1.0 0 -16580092 true "" "plot 0"
 
 SLIDER
-321
-47
-493
-80
+222
+15
+394
+48
 rounds-number
 rounds-number
 0
@@ -1063,10 +1063,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-41
-225
-213
-258
+30
+232
+202
+265
 H
 H
 0
@@ -1078,25 +1078,25 @@ NIL
 HORIZONTAL
 
 SLIDER
-39
-180
-211
-213
+29
+181
+201
+214
 Nc
 Nc
 0
 1000
-25.0
+459.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-38
-104
-210
-137
+28
+92
+200
+125
 goodP-number
 goodP-number
 0
@@ -1108,10 +1108,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-40
-30
-212
-63
+26
+16
+198
+49
 ordinaryP-number
 ordinaryP-number
 0
@@ -1123,10 +1123,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-38
-142
-226
-175
+28
+129
+202
+162
 intermittentP-number
 intermittentP-number
 0
@@ -1138,10 +1138,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-38
-67
-210
-100
+27
+54
+199
+87
 badP-number
 badP-number
 0
@@ -1153,10 +1153,10 @@ NIL
 HORIZONTAL
 
 INPUTBOX
-438
-95
-498
-155
+222
+57
+282
+117
 initialTemperature
 500.0
 1
@@ -1164,10 +1164,10 @@ initialTemperature
 Number
 
 SWITCH
-39
-272
-235
-305
+28
+280
+186
+313
 dynamism-behaviours
 dynamism-behaviours
 1
@@ -1175,10 +1175,10 @@ dynamism-behaviours
 -1000
 
 SWITCH
-38
-320
-205
-353
+28
+319
+186
+352
 dynamism-moves
 dynamism-moves
 1
@@ -1186,10 +1186,10 @@ dynamism-moves
 -1000
 
 SWITCH
-39
-370
-201
-403
+28
+360
+186
+393
 dynamism-setup
 dynamism-setup
 1
@@ -1197,10 +1197,10 @@ dynamism-setup
 -1000
 
 MONITOR
-684
-40
-774
-85
+607
+13
+697
+58
 CONSUMERS
 count consummers
 17
@@ -1208,10 +1208,10 @@ count consummers
 11
 
 BUTTON
-695
-129
-783
-162
+403
+14
+491
+47
 DEFAULT
 set-default-parameters
 NIL
@@ -1225,21 +1225,21 @@ NIL
 1
 
 SWITCH
-731
-212
-841
-245
+287
+57
+391
+90
 no-trust
 no-trust
-1
+0
 1
 -1000
 
 SWITCH
-732
-251
-835
-284
+288
+96
+391
+129
 it-only
 it-only
 1
@@ -1247,10 +1247,10 @@ it-only
 -1000
 
 SWITCH
-733
-290
-836
-323
+289
+135
+392
+168
 it-wr
 it-wr
 0
@@ -1258,10 +1258,10 @@ it-wr
 -1000
 
 INPUTBOX
-40
-419
-99
-479
+28
+406
+87
+466
 nBF
 2.0
 1
@@ -1269,10 +1269,10 @@ nBF
 Number
 
 INPUTBOX
-125
-419
-184
-479
+113
+406
+172
+466
 nRL
 5.0
 1
@@ -1280,10 +1280,10 @@ nRL
 Number
 
 MONITOR
-733
-457
-790
-502
+608
+63
+665
+108
 NIL
 ticks
 17
@@ -1291,10 +1291,10 @@ ticks
 11
 
 BUTTON
-810
-172
-910
-205
+403
+52
+493
+85
 Settings /5
 set-small-world
 NIL
