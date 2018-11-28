@@ -69,7 +69,7 @@ consummers-own [
 providers-own[
   p-type
   performance-level
-  received-ratings  ; rates will be in form r=[a,i,v] maybe a and i  useless ?
+  received-ratings  ; same format with a in order for evaluation generic
 ]
 
 ;_________________________ setup ________________
@@ -207,7 +207,7 @@ to set-default-parameters
   set nBF 2
   set nRL 5
   set wW 1
-  set wC 0.5
+  set wC "0.5"
 end
 
 to set-small-world
@@ -238,7 +238,7 @@ end
 to-report get-component-coef [k]
   if k = "IT" [report wI]
   if k = "WR" [report wW]
-  if k = "CR" [report wC]
+  if k = "CR" [report read-from-string wC]
 end
 
 
@@ -346,7 +346,6 @@ end
 
 ;;There is a difference between getting his own rates (direct interaction) and others (witnesses)
 to-report get-rates [k b]
-
   let r-ab []
   if k = "IT"[
     foreach ratings [
@@ -368,6 +367,8 @@ to-report get-rates [k b]
     ]
     ;set r-ab wr-evaluation b
   ]
+
+  if k = "CR" [report cr-evaluation b]
   report r-ab
 end
 
@@ -437,7 +438,7 @@ to-report get-t-value-by-component [k r-ab]
 		set t-value t-value + (weight * v)
 
   ]
-
+  if weight-sum = 0 [report 0]
   set t-value (t-value / weight-sum)
   report t-value
 
@@ -470,7 +471,7 @@ to-report get-reliability [k b t-value]
 		set weight-sum (weight-sum + weight)
     set p-d p-d + weight * abs (v - t-value)
   ]
-
+  if weight-sum = 0 [report 0]
 	set p-d 1 - (p-d / (2 * weight-sum))
 	let pr 1 - (exp (-1 * gamma * weight-sum))
 
@@ -561,7 +562,7 @@ to-report cr-evaluation [b]
   [
     ifelse length received-ratings <= H
     [set res received-ratings]
-    [set received-ratings sublist sort-with [ l -> item 2 l ] received-ratings 0 H
+    [set received-ratings sublist sort-with [ l -> item 3 l ] received-ratings 0 H
      set res received-ratings]
   ]
   report res
@@ -919,7 +920,7 @@ to interact-with [b]
   ;store
   set ratings lput (list who provider-id ticks r-value) ratings
   let a who
-  ask b [ set received-ratings lput (list a ticks r-value) received-ratings ]
+  ask b [ set received-ratings lput (list a who ticks r-value) received-ratings ]
 
 end
 
@@ -1053,8 +1054,8 @@ PENS
 "CONTROL (FIRE-IT)" 1.0 0 -14454117 true "" "plot mean UGs-IT"
 "IT-WR" 1.0 0 -13840069 true "" "plot mean UGs-ITWR"
 "IT-WR-CR" 1.0 0 -4757638 true "" "plot mean UGs-ITWRCR"
-"pen-4" 1.0 0 -7500403 true "" "plot 2"
-"pen-5" 1.0 0 -16580092 true "" "plot 0"
+"2" 1.0 0 -7500403 true "" "plot 2"
+"0" 1.0 0 -16580092 true "" "plot 0"
 
 SLIDER
 222
@@ -1095,7 +1096,7 @@ Nc
 Nc
 0
 1000
-76.0
+200.0
 1
 1
 NIL
@@ -1251,7 +1252,7 @@ SWITCH
 129
 it-only
 it-only
-1
+0
 1
 -1000
 
@@ -1262,7 +1263,7 @@ SWITCH
 168
 it-wr
 it-wr
-1
+0
 1
 -1000
 
