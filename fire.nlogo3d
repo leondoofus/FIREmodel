@@ -919,8 +919,13 @@ end
 ;_________________________ main loop ________________
 to go
 
+<<<<<<< HEAD
   set UGs-IT []
   set UGs-ITWR []
+=======
+  ;set UGs-IT []
+  ;set UGs-ITWR []
+>>>>>>> 51db128a6f16892c4bf1c103b786770ae322f256
   set UGs-ITWRCR []
   set UGs-NoTrust []
 
@@ -1044,8 +1049,8 @@ PENS
 "CONTROL (FIRE-IT)" 1.0 0 -14454117 true "" "plot mean UGs-IT"
 "IT-WR" 1.0 0 -13840069 true "" "plot mean UGs-ITWR"
 "IT-WR-CR" 1.0 0 -4757638 true "" "plot mean UGs-ITWRCR"
-"pen-4" 1.0 0 -7500403 true "" "plot 2"
-"pen-5" 1.0 0 -16580092 true "" "plot 0"
+"2" 1.0 0 -7500403 true "" "plot 2"
+"0" 1.0 0 -16580092 true "" "plot 0"
 
 SLIDER
 222
@@ -1086,7 +1091,11 @@ Nc
 Nc
 0
 1000
+<<<<<<< HEAD
 459.0
+=======
+274.0
+>>>>>>> 51db128a6f16892c4bf1c103b786770ae322f256
 1
 1
 NIL
@@ -1242,7 +1251,7 @@ SWITCH
 129
 it-only
 it-only
-1
+0
 1
 -1000
 
