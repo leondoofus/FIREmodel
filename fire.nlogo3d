@@ -123,6 +123,7 @@ to setup
   if no-trust [add-consumer Nc "NoTrust"]
   if it-only [add-consumer Nc "IT"]
   if it-wr [add-consumer Nc "ITWR"]
+  if it-wr-cr [add-consumer Nc "ITWRCR"]
 
   add-provider goodP-number "good"
   add-provider ordinaryP-number "ordinary"
@@ -237,6 +238,7 @@ end
 to-report get-component-coef [k]
   if k = "IT" [report wI]
   if k = "WR" [report wW]
+  if k = "CR" [report wC]
 end
 
 
@@ -386,14 +388,13 @@ to-report get-t-value [b]
 
   if t-model = "IT" [set components (list "IT")]
   if t-model = "ITWR" [set components (list "IT" "WR")]
+  if t-model = "ITWRCR" [set components (list "IT" "WR" "CR")]
   let t-value 0
   let weight-sum 0
   let r-ab []
 
   foreach components [
     k ->
-
-
     set r-ab get-rates k b
 
     if length r-ab > 0 [
@@ -553,7 +554,18 @@ to-report wr-evaluation [b]
 	report ratingslist
 end
 
-
+;;CR evaluation process for provider b
+to-report cr-evaluation [b]
+  let res []
+  ask provider b
+  [
+    ifelse length received-ratings <= H
+    [set res received-ratings]
+    [set received-ratings sublist sort-with [ l -> item 2 l ] received-ratings 0 H
+     set res received-ratings]
+  ]
+  report res
+end
 
 ;_________________________ agents selection________________
 
@@ -688,15 +700,13 @@ to-report select-provider
       set r-ab-i get-rates "IT" x
       if (t-model = "ITWR" or t-model = "ITWRCR") [
         set r-ab-w wr-evaluation x]
-
+      if t-model = "ITWRCR" [set r-ab-c cr-evaluation x]
       ifelse (length r-ab-i > 0) or (length r-ab-w > 0) [
         set has-trust-value lput x has-trust-value
         if (length r-ab-w > 0) [
           set wr-evaluations lput (list x r-ab-w) wr-evaluations
         ]
-
       ]
-
       [
         set no-trust-value lput x no-trust-value
       ]
@@ -757,7 +767,6 @@ to-report select-provider
     ;set T initialTemperature - (ticks * 0.00015)
 
     if T <= 0 [
-      print "wooooooooo" ;never reach to this statement
       set T 1]
 
 
@@ -1086,7 +1095,7 @@ Nc
 Nc
 0
 1000
-500.0
+76.0
 1
 1
 NIL
@@ -1231,7 +1240,7 @@ SWITCH
 90
 no-trust
 no-trust
-0
+1
 1
 -1000
 
@@ -1242,7 +1251,7 @@ SWITCH
 129
 it-only
 it-only
-0
+1
 1
 -1000
 
@@ -1253,7 +1262,7 @@ SWITCH
 168
 it-wr
 it-wr
-0
+1
 1
 -1000
 
@@ -1328,6 +1337,17 @@ wC
 1
 0
 String
+
+SWITCH
+289
+174
+392
+207
+it-wr-cr
+it-wr-cr
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
