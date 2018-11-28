@@ -12,7 +12,7 @@ globals [
   lambdaIT
   ;nBF
   ;nRL
-  wI wR wW wC
+  wI wR
   gammaI gammaR gammaW gammaC
   PL-PERFECT PL-GOOD PL-OK PL-BAD PL-WORST
   GOOD-DEV ORDINARY-DEV BAD-DEV
@@ -83,8 +83,6 @@ to setup
 
   set wI 2
   set wR 2
-  set wW 1
-  set wC 0.5
   set gammaI -1 * ln(0.5)
   set gammaR -1 * ln(0.5)
   set gammaW -1 * ln(0.5)
@@ -207,6 +205,8 @@ to set-default-parameters
   set rounds-number 500
   set nBF 2
   set nRL 5
+  set wW 1
+  set wC 0.5
 end
 
 to set-small-world
@@ -919,13 +919,8 @@ end
 ;_________________________ main loop ________________
 to go
 
-<<<<<<< HEAD
   set UGs-IT []
   set UGs-ITWR []
-=======
-  ;set UGs-IT []
-  ;set UGs-ITWR []
->>>>>>> 51db128a6f16892c4bf1c103b786770ae322f256
   set UGs-ITWRCR []
   set UGs-NoTrust []
 
@@ -1049,8 +1044,8 @@ PENS
 "CONTROL (FIRE-IT)" 1.0 0 -14454117 true "" "plot mean UGs-IT"
 "IT-WR" 1.0 0 -13840069 true "" "plot mean UGs-ITWR"
 "IT-WR-CR" 1.0 0 -4757638 true "" "plot mean UGs-ITWRCR"
-"2" 1.0 0 -7500403 true "" "plot 2"
-"0" 1.0 0 -16580092 true "" "plot 0"
+"pen-4" 1.0 0 -7500403 true "" "plot 2"
+"pen-5" 1.0 0 -16580092 true "" "plot 0"
 
 SLIDER
 222
@@ -1091,11 +1086,7 @@ Nc
 Nc
 0
 1000
-<<<<<<< HEAD
-459.0
-=======
-274.0
->>>>>>> 51db128a6f16892c4bf1c103b786770ae322f256
+500.0
 1
 1
 NIL
@@ -1315,6 +1306,28 @@ NIL
 NIL
 NIL
 1
+
+INPUTBOX
+223
+126
+273
+186
+wW
+1.0
+1
+0
+Number
+
+INPUTBOX
+222
+193
+275
+253
+wC
+0.5
+1
+0
+String
 
 @#$#@#$#@
 ## WHAT IS IT?
