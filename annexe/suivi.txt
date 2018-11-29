@@ -88,3 +88,6 @@ J'ai tout mis en commentaire parce que on en a pas besoin pour cette partie.
 • Fixé distance mais tjs en réflexion : asin returns deg not rad -> faut-il faire res * pi / 180 ?
 • Reécrire ratings de providers de même forme que consummers, fixé qq divisions par 0 à cause de liste vide par CR (b n'a jamais été noté)
 • Ajout CR, devoir être checké
+---JJ--
+• TODO : attribut commun à tous les turtles (ratings)
+• DONE : Ajout CR, Pas de divisions par 0, reproduction de la figure 10 (voir plots),  Ajout du modèle de confiance IT + CR, Tests
