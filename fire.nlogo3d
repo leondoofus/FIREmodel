@@ -52,6 +52,7 @@ turtles-own [
   y-pos
   z-pos
   radius ;; radius of operation
+  neighbours ;;consummers neighbours
 ]
 
 consummers-own [
@@ -139,6 +140,7 @@ to setup
     show "There must be consumers"
     stop]
 
+  ask turtles [set-neighbours]
 
   reset-ticks
 end
@@ -155,7 +157,7 @@ to add-consumer [number tmodel]
       [set z-pos sqrt(shape-size - (x-pos * x-pos) - (y-pos * y-pos))]
     setxyz x-pos y-pos z-pos
 
-    set radius shape-size * vary 0.3 1
+    set radius shape-size * vary 0.5 1
     set color violet
 
     set activity-level vary 0.25 1.00
@@ -272,6 +274,7 @@ to-report great-distance [x1 y1 z1 x2 y2 z2]
   let res shape-size * asin ( ((sqrt d2) * sqrt (4 * (shape-size ^ 2) - d2)) / (2 * (shape-size) ^ 2))
   if res > (pi * shape-size) [
     set res pi * shape-size]
+
   report res
 
   ;report abs D
@@ -313,14 +316,8 @@ end
 
 ;d is the difference between d and ro
 to-report ug-out-of-range [ug d]
-  ;let new-ug ug - ug * (d - ro) / maxdiff
-  ;;Or just the distance ?
-  ;let new-ug ug - ug * d / maxdiff
-  ;show d * alpha
 
   let new-ug (ug - (abs ug * d * alpha) )
-
-
   ;let new-ug (ug - d * alpha)
   if new-ug < -10 [set new-ug -10]
 
@@ -353,12 +350,7 @@ end
 to-report get-rates [k b]
   let r-ab []
   if k = "IT"[
-    foreach ratings [
-      r ->
-      if (item 1 r = b) [
-        set r-ab lput r r-ab
-      ]
-    ]
+    set r-ab get-ratings-for b
 
   ]
 
@@ -380,14 +372,23 @@ to-report get-rates [k b]
   report r-ab
 end
 
+to-report get-best-rating-for [b]
+  let rates sort-with [ l -> item 3 l ] get-ratings-for b
+  report item 0 rates
+end
 
 to-report has-ratings? [x]
+  report ((length get-ratings-for x) > 0)
+end
+
+to-report get-ratings-for [b]
+  let res []
   foreach ratings [
     r ->
-    if item 1 r = x [
-      report true]
+    if item 1 r = b [
+      set res lput r res]
   ]
-  report false
+  report res
 end
 
 
@@ -499,7 +500,7 @@ end
 
 
 to delete-old-ratings
-  set ratings sort-with [ l -> item 1 l ] ratings
+  set ratings sort-with [ l -> item 2 l ] ratings
   set ratings sublist ratings 0 H
 end
 
@@ -517,27 +518,23 @@ to-report wr-evaluation [b]
 
   set seen-consumers lput who seen-consumers
 
-  while [witnessNb < nBF and chain < nRL] [
+  while [(witnessNb < nBF) and (chain < nRL)] [
 
     set chain chain + 1
 
+    ;; add acquaintances for next level of exploration
     foreach new-acquaintances[
       x ->
       ;avoid doublons
       if (not member? x acquaintances) [set acquaintances lput x acquaintances]
     ]
 
-    ;show acquaintances
-
     foreach acquaintances [
-    a ->
-    ask consummer a [
-
+      a ->
       set acquaintances remove a acquaintances
-      ifelse has-ratings? b
+      ask consummer a [
+        ifelse has-ratings? b
         [
-
-
           let found-ratings (get-rates "IT" b)
           foreach found-ratings [
             f ->
@@ -556,33 +553,22 @@ to-report wr-evaluation [b]
           ]
         ]
       ]
-    set seen-consumers lput a seen-consumers
+      set seen-consumers lput a seen-consumers
     ]
+
   ]
 
+
 	report ratingslist
+
 end
 
-
-;;CR evaluation process for provider b
-to-report cr-evaluation [b]
-  ;;Not necessary because received ratings isn't bigger than H
-;  let res []
-;  ask provider b
-;  [
-;    ifelse length received-ratings <= H
-;    [set res received-ratings]
-;    [set received-ratings sublist sort-with [ l -> item 2 l ] received-ratings 0 H
-;     set res received-ratings]
-;  ]
-;  report res
-end
 
 ;_________________________ agents selection________________
 
-;get consumer neighbours of an agent (based on his 'operating' radius)
-to-report get-neighbours
-  let neighbours []
+;set consumer neighbours of an agent (based on his 'operating' radius)
+to set-neighbours
+  let c-neighbours []
   let x x-pos
   let y y-pos
   let z z-pos
@@ -592,11 +578,12 @@ to-report get-neighbours
   ask consummers [
     let d great-distance x y z x-pos y-pos z-pos
     ;do not add self to the list
+
     if ((not (who = myId)) and (d <= r))
-    [
-      set neighbours lput who neighbours ]
+    [set c-neighbours lput who c-neighbours ]
   ]
-  report neighbours
+
+  set neighbours c-neighbours
 end
 
 
@@ -614,7 +601,7 @@ end
 
 ;; among neighbours, we get the nearest to the provider b whose trust value is searched
 to-report get-acquaintances-neighbours [b seen-consumers]
-  let neighbours get-neighbours
+  ;let neighbours get-neighbours
   let neighbours-details []
   let provider-position []
 
@@ -628,7 +615,7 @@ to-report get-acquaintances-neighbours [b seen-consumers]
     set neighbours-details lput (list n distance-temp) neighbours-details
   ]
 
-  set neighbours-details reverse sort-with [ l -> item 1 l ] neighbours-details
+  set neighbours-details reverse (sort-with [ l -> item 1 l ] neighbours-details)
 
   let res []
   let agenttmp 0
@@ -641,6 +628,7 @@ to-report get-acquaintances-neighbours [b seen-consumers]
   ]
 
   if (length res > nBF) [ set res sublist res 0 nBF ]
+
 
   report res
 end
@@ -685,13 +673,11 @@ to-report select-provider
     let c-y-pos y-pos
     let c-z-pos z-pos
     let myro radius
-    ;let witness-ratings []
-    let witness-ratings false
     let providersIds []
 
     ask providers [
       ;If provider is nearby (in ro) we add to the list
-      if (great-distance x-pos y-pos z-pos c-x-pos c-y-pos c-z-pos < myro)
+      if (great-distance x-pos y-pos z-pos c-x-pos c-y-pos c-z-pos <= myro)
       [set providersIds lput who providersIds]
     ]
 
@@ -823,11 +809,13 @@ to random-setup
       die
     ]
 
-    add-consumer 1 tmodel
+
     set c one-of consummers
+    add-consumer 1 tmodel
     set i i + 1
 
   ]
+  if (i > 0) [ask consummers [set-neighbours]]
 
   set i 0
   set n random (pPPC * count providers)
@@ -840,12 +828,13 @@ to random-setup
       die
     ]
 
-    add-provider 1 ptype
     set p one-of providers
+    add-provider 1 ptype
     set i i + 1
 
   ]
-
+  ; pas besoin de voisins pour un provider
+  ;if (i > 0) [ask providers [set-neighbours]]
 end
 
 to random-move
@@ -869,7 +858,12 @@ to random-move
     ;; get new cartesian coordinates
     let new-coordinates to-cartesian r theta phi
     ;; move
-    setxyz (item 0 new-coordinates) (item 1 new-coordinates) (item 2 new-coordinates)
+    set x-pos (item 0 new-coordinates)
+    set y-pos (item 1 new-coordinates)
+    set z-pos (item 2 new-coordinates)
+    setxyz x-pos y-pos z-pos
+
+    set-neighbours
   ]
 end
 
@@ -936,10 +930,11 @@ to interact-with [b]
   set ratings lput (list who provider-id ticks r-value) ratings
   let a who
 
+  let brb get-best-rating-for provider-id
   ;provider stores only if it's a good rate (>0)
-  if r-value > 0 [
-    ask b [set received-ratings lput (list a who ticks r-value) received-ratings ]
-  ]
+  ;if r-value > 0 [
+  ask b [set received-ratings lput brb received-ratings ]
+  ;]
 
 end
 
@@ -948,10 +943,13 @@ end
 ;_________________________ main loop ________________
 to go
 
-  ;set UGs-IT []
-  ;set UGs-ITWR []
-  ;set UGs-ITWRCR []
-  ;set UGs-NoTrust []
+  if (empty-lists) [
+    set UGs-IT []
+    set UGs-ITCR []
+    set UGs-ITWR []
+    set UGs-ITWRCR []
+    set UGs-NoTrust []
+  ]
 
   ask consummers [
 
@@ -959,17 +957,22 @@ to go
 
       let prov select-provider
       interact-with provider prov
-
-
     ]
 
     if dynamism-moves [random-move]
+
+    if length ratings > H [delete-old-ratings]
   ]
 
   ask providers [
+    ;; We save only one rating per consumer (the best)
+    ;foreach received-ratings [
+
+    ;]
+
     ;we don't store too much ratings in local database ( > H )
     if length received-ratings > H [
-      set received-ratings sort-with [ l -> item 1 l ] received-ratings
+      set received-ratings sort-with [ l -> item 2 l ] received-ratings
       set received-ratings sublist received-ratings 0 H
     ]
   ]
@@ -1080,6 +1083,7 @@ PENS
 "IT-CR" 1.0 0 -4757638 true "" "plot mean UGs-ITCR"
 "2" 1.0 0 -7500403 true "" "plot 2"
 "0" 1.0 0 -16580092 true "" "plot 0"
+"UGs-ITWRCR" 1.0 0 -955883 true "" "plot mean UGs-ITWRCR"
 
 SLIDER
 222
@@ -1276,7 +1280,7 @@ SWITCH
 129
 it-only
 it-only
-0
+1
 1
 -1000
 
@@ -1297,7 +1301,7 @@ INPUTBOX
 87
 466
 nBF
-2.0
+1.0
 1
 0
 Number
@@ -1308,7 +1312,7 @@ INPUTBOX
 172
 466
 nRL
-5.0
+2.0
 1
 0
 Number
@@ -1348,7 +1352,7 @@ SWITCH
 207
 it-wr-cr
 it-wr-cr
-1
+0
 1
 -1000
 
@@ -1359,7 +1363,44 @@ SWITCH
 246
 it-cr
 it-cr
+1
+1
+-1000
+
+SWITCH
+401
+434
+528
+467
+empty-lists
+empty-lists
+1
+1
+-1000
+
+SLIDER
+238
+356
+370
+389
+liars-percentage
+liars-percentage
 0
+100
+50.0
+1
+1
+NIL
+HORIZONTAL
+
+SWITCH
+239
+318
+342
+351
+liars
+liars
+1
 1
 -1000
 
