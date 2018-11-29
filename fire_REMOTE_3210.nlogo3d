@@ -12,7 +12,7 @@ globals [
   lambdaIT
   ;nBF
   ;nRL
-  wI wR wW wC
+  wI wR
   gammaI gammaR gammaW gammaC
   PL-PERFECT PL-GOOD PL-OK PL-BAD PL-WORST
   GOOD-DEV ORDINARY-DEV BAD-DEV
@@ -20,7 +20,6 @@ globals [
   UGs-IT
   UGs-NoTrust
   UGs-ITWR
-  UGs-ITCR
   UGs-ITWRCR
   provider-type
   trust-model
@@ -56,14 +55,14 @@ turtles-own [
 
 consummers-own [
   activity-level
+	ratings ;; list
+  ;rates will be list like this [a,b,i,v] where a:consumer b:provider
+  ; i:interactionNb and v is the value of the rate
 	t-model ;; can be "IT" , "ITWR" or "NoTrust" for now
 	has-trust-value ;;list
 	no-trust-value ;; list
   T ;; temperature
   wr-evaluations
-  ratings
-  ;for CONSUMERS rates will be list like this [a,b,i,v] where a:consumer b:provider
-  ; i:interactionNb and v is the value of the rate
 
 ]
 
@@ -82,10 +81,8 @@ to setup
   set H 10
   set lambdaIT -5 / ln(0.5)
 
-  set wI 2.0
-  set wR 2.0
-  set wW 1.0
-  set wC 0.5
+  set wI 2
+  set wR 2
   set gammaI -1 * ln(0.5)
   set gammaR -1 * ln(0.5)
   set gammaW -1 * ln(0.5)
@@ -101,11 +98,10 @@ to setup
   set DEGRADATION 1
   set UGs-IT []
   set UGs-ITWR []
-  set UGs-ITCR []
   set UGs-ITWRCR []
   set UGs-NoTrust []
   set provider-type ["good" "bad" "intermittent" "ordinary"]
-  set trust-model ["NoTrust" "IT" "ITWR" "ITWRCR" "ITCR"]
+  set trust-model ["NoTrust" "IT" "ITWR"]
   set component ["IT" "WR" "CR"]
   set pCPC 0.05
   set pPPC 0.02
@@ -128,7 +124,6 @@ to setup
   if it-only [add-consumer Nc "IT"]
   if it-wr [add-consumer Nc "ITWR"]
   if it-wr-cr [add-consumer Nc "ITWRCR"]
-  if it-cr [add-consumer Nc "ITCR"]
 
   add-provider goodP-number "good"
   add-provider ordinaryP-number "ordinary"
@@ -211,8 +206,8 @@ to set-default-parameters
   set rounds-number 500
   set nBF 2
   set nRL 5
-  ;set wW 1
-  ;set wC 0.5
+  set wW 1
+  set wC "0.5"
 end
 
 to set-small-world
@@ -243,7 +238,7 @@ end
 to-report get-component-coef [k]
   if k = "IT" [report wI]
   if k = "WR" [report wW]
-  if k = "CR" [report wC]
+  if k = "CR" [report read-from-string wC]
 end
 
 
@@ -370,13 +365,10 @@ to-report get-rates [k b]
         report r-ab
       ]
     ]
-
+    ;set r-ab wr-evaluation b
   ]
 
-  if k = "CR" [
-
-    ask provider b [set r-ab received-ratings]
-  ]
+  if k = "CR" [report cr-evaluation b]
   report r-ab
 end
 
@@ -397,9 +389,7 @@ to-report get-t-value [b]
 
   if t-model = "IT" [set components (list "IT")]
   if t-model = "ITWR" [set components (list "IT" "WR")]
-  if t-model = "ITCR" [set components (list "IT" "CR")]
   if t-model = "ITWRCR" [set components (list "IT" "WR" "CR")]
-
   let t-value 0
   let weight-sum 0
   let r-ab []
@@ -448,7 +438,7 @@ to-report get-t-value-by-component [k r-ab]
 		set t-value t-value + (weight * v)
 
   ]
-
+  if weight-sum = 0 [report 0]
   set t-value (t-value / weight-sum)
   report t-value
 
@@ -481,7 +471,7 @@ to-report get-reliability [k b t-value]
 		set weight-sum (weight-sum + weight)
     set p-d p-d + weight * abs (v - t-value)
   ]
-
+  if weight-sum = 0 [report 0]
 	set p-d 1 - (p-d / (2 * weight-sum))
 	let pr 1 - (exp (-1 * gamma * weight-sum))
 
@@ -489,7 +479,10 @@ to-report get-reliability [k b t-value]
 end
 
 to-report get-weight [k r]
-  report exp(-1 * (ticks - item 2 r)) / lambdaIT
+  if ((k = "IT") or (k = "WR")) [
+    report exp(-1 * (ticks - item 2 r)) / lambdaIT
+  ]
+  report 0
 end
 
 ;; sort decreasingly a list of lists (by item of sublist)
@@ -502,7 +495,6 @@ to delete-old-ratings
   set ratings sort-with [ l -> item 1 l ] ratings
   set ratings sublist ratings 0 H
 end
-
 
 ;;WR evaluation process for provider b
 to-report wr-evaluation [b]
@@ -563,19 +555,17 @@ to-report wr-evaluation [b]
 	report ratingslist
 end
 
-
 ;;CR evaluation process for provider b
 to-report cr-evaluation [b]
-  ;;Not necessary because received ratings isn't bigger than H
-;  let res []
-;  ask provider b
-;  [
-;    ifelse length received-ratings <= H
-;    [set res received-ratings]
-;    [set received-ratings sublist sort-with [ l -> item 2 l ] received-ratings 0 H
-;     set res received-ratings]
-;  ]
-;  report res
+  let res []
+  ask provider b
+  [
+    ifelse length received-ratings <= H
+    [set res received-ratings]
+    [set received-ratings sublist sort-with [ l -> item 3 l ] received-ratings 0 H
+     set res received-ratings]
+  ]
+  report res
 end
 
 ;_________________________ agents selection________________
@@ -661,7 +651,7 @@ to-report select-best-provider
       let r-ab get-rates "IT" x
       set t-value get-t-value-by-component t-model r-ab
     ]
-    ;; If the t-model is not "IT" it can only be ITWR or ITWRCR or ITCR (cause NoTrust consumers won't select best provider)
+    ;; If the t-model is not "IT" it can only be ITWR or ITWRCR (cause NoTrust consumers won't select best provider)
     [
 
       set t-value get-t-value x]
@@ -711,12 +701,8 @@ to-report select-provider
       set r-ab-i get-rates "IT" x
       if (t-model = "ITWR" or t-model = "ITWRCR") [
         set r-ab-w wr-evaluation x]
-
-      if (t-model = "ITCR" or t-model = "ITWRCR") [
-        ask provider x [set r-ab-c received-ratings]
-      ]
-
-      ifelse (length r-ab-i > 0) or (length r-ab-w > 0) or (length r-ab-c > 0) [
+      if t-model = "ITWRCR" [set r-ab-c cr-evaluation x]
+      ifelse (length r-ab-i > 0) or (length r-ab-w > 0) [
         set has-trust-value lput x has-trust-value
         if (length r-ab-w > 0) [
           set wr-evaluations lput (list x r-ab-w) wr-evaluations
@@ -923,7 +909,6 @@ to interact-with [b]
 
   ]
   ;add utilities to global lists
-  if t-model = "ITCR" [ set UGs-ITCR lput ug UGs-ITCR ]
   if t-model = "ITWRCR" [ set UGs-ITWRCR lput ug UGs-ITWRCR ]
   if t-model = "ITWR" [ set UGs-ITWR lput ug UGs-ITWR ]
   if t-model = "IT" [ set UGs-IT lput ug UGs-IT ]
@@ -935,11 +920,7 @@ to interact-with [b]
   ;store
   set ratings lput (list who provider-id ticks r-value) ratings
   let a who
-
-  ;provider stores only if it's a good rate (>0)
-  if r-value > 0 [
-    ask b [set received-ratings lput (list a who ticks r-value) received-ratings ]
-  ]
+  ask b [ set received-ratings lput (list a who ticks r-value) received-ratings ]
 
 end
 
@@ -948,12 +929,15 @@ end
 ;_________________________ main loop ________________
 to go
 
-  ;set UGs-IT []
-  ;set UGs-ITWR []
-  ;set UGs-ITWRCR []
-  ;set UGs-NoTrust []
+  set UGs-IT []
+  set UGs-ITWR []
+  set UGs-ITWRCR []
+  set UGs-NoTrust []
 
   ask consummers [
+
+    ;we don't store too much ratings in local database ( > H )
+    if length ratings > H [delete-old-ratings]
 
     if random-float 1.0 < activity-level [
 
@@ -964,14 +948,6 @@ to go
     ]
 
     if dynamism-moves [random-move]
-  ]
-
-  ask providers [
-    ;we don't store too much ratings in local database ( > H )
-    if length received-ratings > H [
-      set received-ratings sort-with [ l -> item 1 l ] received-ratings
-      set received-ratings sublist received-ratings 0 H
-    ]
   ]
 
 
@@ -1077,7 +1053,7 @@ PENS
 "noTrust" 1.0 0 -2674135 true "" "plot mean UGs-NoTrust "
 "CONTROL (FIRE-IT)" 1.0 0 -14454117 true "" "plot mean UGs-IT"
 "IT-WR" 1.0 0 -13840069 true "" "plot mean UGs-ITWR"
-"IT-CR" 1.0 0 -4757638 true "" "plot mean UGs-ITCR"
+"IT-WR-CR" 1.0 0 -4757638 true "" "plot mean UGs-ITWRCR"
 "2" 1.0 0 -7500403 true "" "plot 2"
 "0" 1.0 0 -16580092 true "" "plot 0"
 
@@ -1120,7 +1096,7 @@ Nc
 Nc
 0
 1000
-500.0
+200.0
 1
 1
 NIL
@@ -1341,6 +1317,28 @@ NIL
 NIL
 1
 
+INPUTBOX
+223
+126
+273
+186
+wW
+1.0
+1
+0
+Number
+
+INPUTBOX
+222
+193
+275
+253
+wC
+0.5
+1
+0
+String
+
 SWITCH
 289
 174
@@ -1348,17 +1346,6 @@ SWITCH
 207
 it-wr-cr
 it-wr-cr
-1
-1
--1000
-
-SWITCH
-288
-213
-391
-246
-it-cr
-it-cr
 0
 1
 -1000

@@ -83,3 +83,8 @@ J'ai tout mis en commentaire parce que on en a pas besoin pour cette partie.
 • Configuration du rayon d'opération en fonction du type d'agent (c ou p)
 • Tests, tests, et encore tests
 • J'ai avancé sur le rapport aussi
+
+29.11
+• Fixé distance mais tjs en réflexion : asin returns deg not rad -> faut-il faire res * pi / 180 ?
+• Reécrire ratings de providers de même forme que consummers, fixé qq divisions par 0 à cause de liste vide par CR (b n'a jamais été noté)
+• Ajout CR, devoir être checké

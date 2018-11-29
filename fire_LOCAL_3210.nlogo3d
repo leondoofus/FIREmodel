@@ -52,6 +52,9 @@ turtles-own [
   y-pos
   z-pos
   radius ;; radius of operation
+  received-ratings
+
+  ;; for PROVIDERS rates will be in form r=[a,i,v] maybe a and i  useless ?
 ]
 
 consummers-own [
@@ -70,7 +73,6 @@ consummers-own [
 providers-own[
   p-type
   performance-level
-  received-ratings  ; same format with a in order for evaluation generic
 ]
 
 ;_________________________ setup ________________
@@ -351,6 +353,7 @@ end
 
 ;;There is a difference between getting his own rates (direct interaction) and others (witnesses)
 to-report get-rates [k b]
+
   let r-ab []
   if k = "IT"[
     foreach ratings [
@@ -1287,7 +1290,7 @@ SWITCH
 168
 it-wr
 it-wr
-0
+1
 1
 -1000
 
