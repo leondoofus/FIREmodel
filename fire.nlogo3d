@@ -391,8 +391,11 @@ to-report get-rates [k b]
 end
 
 to-report get-false-rate [r]
-  let epsilon vary -2 2
-  let new-rate (list item 0 r item 1 r item 2 r (item 3 r + epsilon))
+  let epsilon vary -0.75 0.75
+  let new-value (item 3 r + epsilon)
+  if new-value > 1 [set new-value 1]
+  if new-value < -1 [set new-value -1]
+  let new-rate (list item 0 r item 1 r item 2 r new-value)
   report new-rate
 end
 
