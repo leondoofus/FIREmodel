@@ -53,6 +53,7 @@ turtles-own [
   z-pos
   radius ;; radius of operation
   neighbours ;;consummers neighbours
+  is-liar
 ]
 
 consummers-own [
@@ -140,7 +141,22 @@ to setup
     show "There must be consumers"
     stop]
 
-  ask turtles [set-neighbours]
+  ask turtles [
+    set-neighbours
+
+  ]
+  ;;Set some liars
+  if (liars) [
+    let ttl count consummers
+    let n ((liars-percentage * ttl) / 100)
+    let i 0
+    let liars-list n-of n consummers
+    ask liars-list [
+      set i i + 1
+      set is-liar true
+    ]
+  ]
+
 
   reset-ticks
 end
@@ -166,6 +182,8 @@ to add-consumer [number tmodel]
     set has-trust-value []
     set no-trust-value []
     set T initialTemperature
+    set is-liar false
+
 
     if t-model = "ITWR" or t-model = "ITWRCR" [set wr-evaluations []]
 
@@ -187,6 +205,7 @@ to add-provider [number ptype]
     set received-ratings []
 
     setup-provider-type ptype
+    set is-liar false
   ]
 end
 
@@ -351,7 +370,6 @@ to-report get-rates [k b]
   let r-ab []
   if k = "IT"[
     set r-ab get-ratings-for b
-
   ]
 
   if k = "WR" [
@@ -372,9 +390,21 @@ to-report get-rates [k b]
   report r-ab
 end
 
+to-report get-false-rate [r]
+  let epsilon vary -2 2
+  let new-rate (list item 0 r item 1 r item 2 r (item 3 r + epsilon))
+  report new-rate
+end
+
+;;This function is to retrieve the best rating for b to give it to the provider b (certified reputation)
 to-report get-best-rating-for [b]
   let rates sort-with [ l -> item 3 l ] get-ratings-for b
-  report item 0 rates
+  let br item 0 rates
+  ;; We change the rate before sending it to the provider if the consumer is a liar
+  if is-liar [
+    set br get-false-rate br
+  ]
+  report br
 end
 
 to-report has-ratings? [x]
@@ -442,7 +472,7 @@ to-report get-t-value-by-component [k r-ab]
     ;Get the real expectation (considering distance)
     set ug ug + ug-difference ug item 0 r item 1 r
     ;Back to rating value range
-    if k = "WR" [set v ug / 10]
+    if k = "WR" or k = "CR" [set v ug / 10]
 
     let weight get-weight k r
 		set weight-sum (weight-sum + weight)
@@ -476,7 +506,7 @@ to-report get-reliability [k b t-value]
     ;Get the real expectation (considering distance)
     set ug ug + ug-difference ug item 0 r item 1 r
     ;Back to rating value range
-    if k = "WR" [set v ug / 10]
+    if k = "WR" or k = "CR" [set v ug / 10]
 
     let weight get-weight k r
 		set weight-sum (weight-sum + weight)
@@ -538,7 +568,9 @@ to-report wr-evaluation [b]
           let found-ratings (get-rates "IT" b)
           foreach found-ratings [
             f ->
-            set ratingslist lput f ratingslist
+            ;if the consumer is a liar, he will pass on false ratings
+            ifelse is-liar [set ratingslist lput get-false-rate f ratingslist]
+            [set ratingslist lput f ratingslist]
           ]
           ;If he had an interaction he is a witness
           set witnessNb witnessNb + 1
@@ -930,6 +962,7 @@ to interact-with [b]
   set ratings lput (list who provider-id ticks r-value) ratings
   let a who
 
+
   let brb get-best-rating-for provider-id
   ;provider stores only if it's a good rate (>0)
   ;if r-value > 0 [
@@ -1291,7 +1324,7 @@ SWITCH
 168
 it-wr
 it-wr
-0
+1
 1
 -1000
 
@@ -1301,7 +1334,7 @@ INPUTBOX
 87
 466
 nBF
-1.0
+2.0
 1
 0
 Number
@@ -1312,7 +1345,7 @@ INPUTBOX
 172
 466
 nRL
-2.0
+5.0
 1
 0
 Number
@@ -1352,7 +1385,7 @@ SWITCH
 207
 it-wr-cr
 it-wr-cr
-0
+1
 1
 -1000
 
@@ -1363,7 +1396,7 @@ SWITCH
 246
 it-cr
 it-cr
-1
+0
 1
 -1000
 
@@ -1387,7 +1420,7 @@ liars-percentage
 liars-percentage
 0
 100
-50.0
+28.0
 1
 1
 NIL
@@ -1400,7 +1433,7 @@ SWITCH
 351
 liars
 liars
-1
+0
 1
 -1000
 
