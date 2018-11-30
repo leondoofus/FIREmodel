@@ -1088,10 +1088,10 @@ NIL
 0
 
 TEXTBOX
-30
-483
-180
-539
+29
+480
+179
+536
 réglable : degradation, poids des components
 11
 71.0
@@ -1117,9 +1117,9 @@ PENS
 "CONTROL (FIRE-IT)" 1.0 0 -14454117 true "" "plot mean UGs-IT"
 "IT-WR" 1.0 0 -13840069 true "" "plot mean UGs-ITWR"
 "IT-CR" 1.0 0 -4757638 true "" "plot mean UGs-ITCR"
-"2" 1.0 0 -7500403 true "" "plot 2"
-"0" 1.0 0 -16580092 true "" "plot 0"
 "UGs-ITWRCR" 1.0 0 -955883 true "" "plot mean UGs-ITWRCR"
+"2" 1.0 0 -4539718 true "" "plot 2"
+"0" 1.0 0 -16777216 true "" "plot 0"
 
 SLIDER
 222
@@ -1316,7 +1316,7 @@ SWITCH
 129
 it-only
 it-only
-1
+0
 1
 -1000
 
@@ -1404,10 +1404,10 @@ it-cr
 -1000
 
 SWITCH
-401
-434
-528
-467
+210
+407
+337
+440
 empty-lists
 empty-lists
 1
@@ -1415,10 +1415,10 @@ empty-lists
 -1000
 
 SLIDER
-238
-356
-370
-389
+215
+320
+347
+353
 liars-percentage
 liars-percentage
 0
@@ -1430,10 +1430,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-239
-318
-342
-351
+216
+281
+319
+314
 liars
 liars
 0
