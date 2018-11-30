@@ -984,14 +984,14 @@ end
 
 ;_________________________ main loop ________________
 to go
-  let grandM 0.7
+  let grandM 2.05
   let petitM 0.5
   if ticks > rounds-number [
     if floatwW > grandM [stop]
     set floatwC floatwC + 0.1
     ifelse floatwC > grandM [
       set floatwW floatwW + 0.1
-      set floatwC 0.5
+      set floatwC petitM
       file-write mean UGs-ITWRCR
       file-show "], "
       file-write "[ "
@@ -1137,7 +1137,7 @@ rounds-number
 rounds-number
 0
 500
-1.0
+100.0
 1
 1
 NIL
@@ -1417,7 +1417,7 @@ SWITCH
 400
 empty-lists
 empty-lists
-0
+1
 1
 -1000
 
@@ -1456,7 +1456,7 @@ floatwW
 floatwW
 0.5
 2.05
-0.5
+1.7000000000000004
 0.1
 1
 NIL
@@ -1471,7 +1471,7 @@ floatwC
 floatwC
 0.5
 2.05
-0.5
+0.7
 0.1
 1
 NIL
