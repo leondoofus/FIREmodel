@@ -41,6 +41,8 @@ globals [
   ;; to plot decision between exploit and explore
   choiceExp
   choiceExp2
+
+  moyyy
 ]
 
 ;_________________________ breeds properties ________________
@@ -78,6 +80,8 @@ providers-own[
 ;_________________________ setup ________________
 to setup
   clear-all
+  set moyyy []
+  file-open "data 42"
   ;;setup all statics variables
   set shape-size 1000.0
   ;set shape-size 1.0
@@ -86,8 +90,10 @@ to setup
 
   set wI 2.0
   set wR 2.0
-  set wW 1.0
-  set wC 0.5
+  ;set wW 1.0
+  ;set wC 0.5
+  set wW floatwW
+  set wC floatwC
   set gammaI -1 * ln(0.5)
   set gammaR -1 * ln(0.5)
   set gammaW -1 * ln(0.5)
@@ -978,6 +984,27 @@ end
 
 ;_________________________ main loop ________________
 to go
+  let grandM 0.7
+  let petitM 0.5
+  if ticks > rounds-number [
+    if floatwW > grandM [stop]
+    set floatwC floatwC + 0.1
+    ifelse floatwC > grandM [
+      set floatwW floatwW + 0.1
+      set floatwC 0.5
+      file-write mean UGs-ITWRCR
+      file-show "], "
+      file-write "[ "
+    ]
+    [
+      file-write mean UGs-ITWRCR
+      file-write ", "
+    ]
+    if floatwW > grandM [
+      file-close
+      stop]
+    file-close
+    setup]
   if (empty-lists) [
     set UGs-IT []
     set UGs-ITCR []
@@ -1016,8 +1043,13 @@ to go
   if dynamism-behaviours [ask providers [switch-behaviour]]
 
   if dynamism-setup [random-setup]
-
-  if ticks >= rounds-number [stop]
+  ;if ticks = 0 [file-write "[ "]
+  ;file-write mean UGs-ITWRCR
+  ;file-write ", "
+  if ticks >= rounds-number [
+    ;file-show "], "
+    ;file-close
+    ]
 
   tick
 
@@ -1096,30 +1128,6 @@ réglable : degradation, poids des components
 71.0
 1
 
-PLOT
-400
-115
-823
-425
-Comparison UG
-Interaction
-UG
-0.0
-100.0
--2.0
-5.0
-true
-true
-"" ""
-PENS
-"noTrust" 1.0 0 -2674135 true "" "plot mean UGs-NoTrust "
-"CONTROL (FIRE-IT)" 1.0 0 -14454117 true "" "plot mean UGs-IT"
-"IT-WR" 1.0 0 -13840069 true "" "plot mean UGs-ITWR"
-"IT-CR" 1.0 0 -4757638 true "" "plot mean UGs-ITCR"
-"UGs-ITWRCR" 1.0 0 -955883 true "" "plot mean UGs-ITWRCR"
-"2" 1.0 0 -4539718 true "" "plot 2"
-"0" 1.0 0 -16777216 true "" "plot 0"
-
 SLIDER
 222
 15
@@ -1129,7 +1137,7 @@ rounds-number
 rounds-number
 0
 500
-500.0
+1.0
 1
 1
 NIL
@@ -1159,7 +1167,7 @@ Nc
 Nc
 0
 1000
-500.0
+250.0
 1
 1
 NIL
@@ -1304,7 +1312,7 @@ SWITCH
 90
 no-trust
 no-trust
-0
+1
 1
 -1000
 
@@ -1387,7 +1395,7 @@ SWITCH
 207
 it-wr-cr
 it-wr-cr
-1
+0
 1
 -1000
 
@@ -1398,18 +1406,18 @@ SWITCH
 246
 it-cr
 it-cr
-0
+1
 1
 -1000
 
 SWITCH
-210
-407
-337
-440
+214
+367
+341
+400
 empty-lists
 empty-lists
-1
+0
 1
 -1000
 
@@ -1435,9 +1443,63 @@ SWITCH
 314
 liars
 liars
-0
+1
 1
 -1000
+
+SLIDER
+361
+464
+533
+497
+floatwW
+floatwW
+0.5
+2.05
+0.5
+0.1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+553
+464
+725
+497
+floatwC
+floatwC
+0.5
+2.05
+0.5
+0.1
+1
+NIL
+HORIZONTAL
+
+PLOT
+400
+115
+823
+425
+Comparison UG
+Interaction
+UG
+0.0
+100.0
+-2.0
+5.0
+true
+true
+"" ""
+PENS
+"noTrust" 1.0 0 -2674135 true "" "plot mean UGs-NoTrust "
+"CONTROL (FIRE-IT)" 1.0 0 -14454117 true "" "plot mean UGs-IT"
+"IT-WR" 1.0 0 -13840069 true "" "plot mean UGs-ITWR"
+"IT-CR" 1.0 0 -4757638 true "" "plot mean UGs-ITCR"
+"UGs-ITWRCR" 1.0 0 -955883 true "" "plot mean UGs-ITWRCR"
+"2" 1.0 0 -4539718 true "" "plot 2"
+"0" 1.0 0 -16777216 true "" "plot 0"
 
 @#$#@#$#@
 ## WHAT IS IT?
