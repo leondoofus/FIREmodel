@@ -24,7 +24,7 @@ ax = fig.gca(projection='3d')
 # Make data.
 X = np.arange(0.5, 2.1, 0.1)
 Y = np.arange(0.5, 2.1, 0.1)
-X, Y = np.meshgrid(X, Y)
+Y, X = np.meshgrid(X, Y)
 Z = np.array(data)
 print (X)
 print (Y)
@@ -33,8 +33,9 @@ print (X[0,9], Y[0,9], Z[0,9])
 
 # Plot the surface.
 surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,
-                       linewidth=0, antialiased=False)
-
+                       linewidth=0, antialiased=True)
+ax.set(xlabel='Ww', ylabel='Wc',
+       title='UG in function of Ww and Wc')
 # Customize the z axis.
 #ax.set_zlim(-1.01, 1.01)
 #ax.zaxis.set_major_locator(LinearLocator(10))
