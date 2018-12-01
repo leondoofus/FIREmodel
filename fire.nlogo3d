@@ -38,9 +38,6 @@ globals [
   ;; coefficient for the decrease of ug due to distance
   alpha
 
-  ;; to plot decision between exploit and explore
-  choiceExp
-  choiceExp2
 ]
 
 ;_________________________ breeds properties ________________
@@ -232,21 +229,59 @@ to set-default-parameters
   set rounds-number 500
   set nBF 2
   set nRL 5
-  ;set wW 1
-  ;set wC 0.5
 end
 
-to set-small-world
-  set shape-size shape-size / 5
-  set goodP-number goodP-number / 5
-  set ordinaryP-number ordinaryP-number / 5
-  set intermittentP-number intermittentP-number / 5
-  set badP-number badP-number / 5
-  set Nc Nc / 5
+to setup-figure-9-IT-only
   set rounds-number 200
-  set nBF 1
-  set nRL 2
+  set liars false
+  set no-trust true
+  set it-only true
+  set it-wr false
+  set it-wr-cr false
+  set it-cr false
+  setup
 end
+
+to setup-figure-9
+  set rounds-number 200
+  set liars false
+  set no-trust false
+  set it-only true
+  set it-wr true
+  set it-wr-cr false
+  set it-cr false
+  set nRL 2
+  set nBF 1
+
+  setup
+end
+
+to setup-figure-10
+  set rounds-number 200
+  set liars false
+  set no-trust false
+  set it-only true
+  set it-wr false
+  set it-wr-cr false
+  set it-cr true
+  set nRL 2
+  set nBF 1
+  setup
+end
+
+to setup-figure-11
+  set rounds-number 200
+  set liars false
+  set no-trust false
+  set it-only false
+  set it-wr true
+  set it-wr-cr true
+  set it-cr false
+  set nRL 2
+  set nBF 1
+  setup
+end
+
 
 ;_________________________ enum provider type ________________
 to-report get-type-properties [ptype]
@@ -276,27 +311,12 @@ end
 
 to-report great-distance [x1 y1 z1 x2 y2 z2]
 
-  ;let dotproduct (x1 * x2 + y1 * y2 + z1 * z2)/(shape-size ^ 2) ; normalized
-  ;report acos(dotproduct) * shape-size
-
-  ;; Jehyankaa
-;  let latlong get-lat-long x1 y1 z1
-;  let latlong2 get-lat-long x2 y2 z2
-;  let lat1 item 0 latlong
-;  let lat2 item 0 latlong2
-;  let lon1 item 1 latlong
-;  let lon2 item 1 latlong2
-;
-;  let D  (sin ( (lat2 - lat1) / 2) ) ^ 2 + ( cos lat1 * cos lat2 * (sin ((lon2 - lon1) / 2) ) ^ 2 )
-;  set D 2 * shape-size * asin (sqrt D)
   let d2 ((x1 - x2) ^ 2 + (y1 - y2) ^ 2 + (z1 - z2) ^ 2)
   let res shape-size * asin ( ((sqrt d2) * sqrt (4 * (shape-size ^ 2) - d2)) / (2 * (shape-size) ^ 2))
   if res > (pi * shape-size) [
     set res pi * shape-size]
 
   report res
-
-  ;report abs D
 end
 
 ;Will report the difference (in UG units)
@@ -794,13 +814,8 @@ to-report select-provider
     ; this consideration will be in get-t-value also
     set er-explore ug-out-of-range er-explore mean distances
 
-    let temp-coef (999 / 1000)
-    ;let temp-coef (( 10 * rounds-number - 1) / (10 * rounds-number))
     set T T - 1
-    ;set T T * temp-coef
-    ;set T initialTemperature * (temp-coef ^ (ticks))
-    ;set T T - (1 / (rounds-number * 10))
-    ;set T initialTemperature - (ticks * 0.00015)
+
 
     if T <= 0 [
       set T 1]
@@ -829,7 +844,7 @@ to random-setup
 
   ;; on suppose qu'on garde les même proportions pour les consumers (notrust vs fire)
   ;; et les providers (autant de good, bad etc)
-  ;; a vérifier (on est peut être pas obligé)
+  ;; a vérifier
   let n random (pCPC * count consummers)
 
 
@@ -868,8 +883,6 @@ to random-setup
     set i i + 1
 
   ]
-  ; pas besoin de voisins pour un provider
-  ;if (i > 0) [ask providers [set-neighbours]]
 end
 
 to random-move
@@ -1000,10 +1013,6 @@ to go
   ]
 
   ask providers [
-    ;; We save only one rating per consumer (the best)
-    ;foreach received-ratings [
-
-    ;]
 
     ;we don't store too much ratings in local database ( > H )
     if length received-ratings > H [
@@ -1363,23 +1372,6 @@ ticks
 1
 11
 
-BUTTON
-403
-52
-493
-85
-Settings /5
-set-small-world
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
 SWITCH
 289
 174
@@ -1387,7 +1379,7 @@ SWITCH
 207
 it-wr-cr
 it-wr-cr
-0
+1
 1
 -1000
 
@@ -1435,9 +1427,77 @@ SWITCH
 314
 liars
 liars
-0
+1
 1
 -1000
+
+BUTTON
+509
+445
+604
+478
+FIGURE 9
+setup-figure-9
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+717
+445
+820
+478
+FIGURE 11
+setup-figure-11
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+609
+445
+706
+478
+FIGURE 10
+setup-figure-10
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+390
+444
+505
+477
+FIGURE 9 (IT only)
+setup-figure-9-IT-only
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
