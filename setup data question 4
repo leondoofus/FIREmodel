@@ -1,0 +1,9 @@
+Setup exp 4.1 UG en fct Nc, ticks = 200
+Nc = 50 + 50 chaque tour
+
+Setup exp 4.2 Nc fixé à 250 ticks = 200
+
+Setup 4.4
+Nc = 250 ticks = 200
+legends = ["[10,40,5,45]","[0,100,0,0]","[100,0,0,0]",
+           "[0,0,50,50]","[0,50,25,25]","[50,50,0,0]"]

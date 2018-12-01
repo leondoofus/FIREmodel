@@ -66,7 +66,8 @@ consummers-own [
   ratings
   ;for CONSUMERS rates will be list like this [a,b,i,v] where a:consumer b:provider
   ; i:interactionNb and v is the value of the rate
-
+  myug
+  mynbiter
 ]
 
 providers-own[
@@ -183,7 +184,8 @@ to add-consumer [number tmodel]
     set no-trust-value []
     set T initialTemperature
     set is-liar false
-
+    set myug 0
+    set mynbiter 0
 
     if t-model = "ITWR" or t-model = "ITWRCR" [set wr-evaluations []]
 
@@ -203,7 +205,6 @@ to add-provider [number ptype]
     set radius shape-size * vary 0.1 0.4
 
     set received-ratings []
-
     setup-provider-type ptype
     set is-liar false
   ]
@@ -965,6 +966,8 @@ to interact-with [b]
   set ratings lput (list who provider-id ticks r-value) ratings
   let a who
 
+  set myug myug + ug
+  set mynbiter mynbiter + 1
 
   let brb get-best-rating-for provider-id
   ;provider stores only if it's a good rate (>0)
@@ -1017,7 +1020,19 @@ to go
 
   if dynamism-setup [random-setup]
 
-  if ticks >= rounds-number [stop]
+  if ticks >= rounds-number [
+    file-open "data43"
+    file-write "{"
+    ask consummers [
+      file-write who
+      file-write ":"
+      file-write (word (myug / mynbiter))
+      file-write ","
+    ]
+
+    file-write "{"
+    file-close
+    stop]
 
   tick
 
@@ -1129,7 +1144,7 @@ rounds-number
 rounds-number
 0
 500
-200.0
+500.0
 1
 1
 NIL
@@ -1315,7 +1330,7 @@ SWITCH
 129
 it-only
 it-only
-0
+1
 1
 -1000
 
@@ -1326,7 +1341,7 @@ SWITCH
 168
 it-wr
 it-wr
-0
+1
 1
 -1000
 
