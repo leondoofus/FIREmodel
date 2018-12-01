@@ -25,7 +25,7 @@ ax = fig.gca(projection='3d')
 X = np.arange(0.5, 2.1, 0.1)
 Y = np.arange(0.5, 2.1, 0.1)
 X, Y = np.meshgrid(X, Y)
-Z = X + Y
+Z = np.array(data)
 print (X)
 print (Y)
 print (Z)
