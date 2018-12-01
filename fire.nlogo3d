@@ -1126,8 +1126,8 @@ PENS
 "IT-WR" 1.0 0 -13840069 true "" "plot mean UGs-ITWR"
 "IT-CR" 1.0 0 -4757638 true "" "plot mean UGs-ITCR"
 "ITWRCR" 1.0 0 -955883 true "" "plot mean UGs-ITWRCR"
-"2" 1.0 0 -4539718 true "" "plot 2"
-"0" 1.0 0 -16777216 true "" "plot 0"
+"2" 1.0 0 -4539718 false "" "plot 2"
+"0" 1.0 0 -16777216 false "" "plot 0"
 
 SLIDER
 222
