@@ -1,0 +1,29 @@
+
+\begin{algorithm}[H]
+\caption{get Trust Value for b by Component k}
+\begin{algorithmic} 
+\STATE t-value $\leftarrow$ 0
+\STATE weightSum $\leftarrow$ 0
+
+\IF{k = IT}
+\STATE r-ab $\leftarrow$ self.getRates(b)
+\ENDIF
+\IF{k = WR}
+\STATE r-ab $\leftarrow$ wr-evaluation(b)
+\ENDIF
+\IF{k = CR}
+\STATE r-ab $\leftarrow$ b.receivedRatings
+\ENDIF
+
+\FORALL{r in r-ab}
+\STATE ug $\leftarrow$ r[v] * 10
+\STATE ug $\leftarrow$ ug + $\delta$UG
+\STATE v $\leftarrow$ ug / 10
+\STATE weight $\leftarrow$ $\frac{\exp{ (-1*this.tick-r[i]) }}{\lambda}$
+\STATE weightSum $\leftarrow$ weightSum + weight
+\STATE t-value $\leftarrow$ t-value + weight * v
+\ENDFOR
+\STATE t-value $\leftarrow$ t-value / weightSum
+\RETURN t-value
+\end{algorithmic}
+\end{algorithm}

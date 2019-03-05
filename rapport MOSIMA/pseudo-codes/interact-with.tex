@@ -1,0 +1,15 @@
+\begin{algorithm}[H]
+\caption{Interact-with (Provider p)}
+
+\begin{algorithmic}
+\STATE ug $\leftarrow$ getUG (p.type)
+
+\IF{consumer out of provider's radius}
+\STATE ug $\leftarrow$ ug*alpha*distance
+\ENDIF
+\STATE add-ug-to-list (t-model)
+\STATE v $\leftarrow$ $\frac{ug}{10}$
+\STATE self.ratings $\leftarrow$ self.ratings $\cup$ \{new Rate (self,provider, tick, v)\}
+
+\end{algorithmic}
+\end{algorithm}

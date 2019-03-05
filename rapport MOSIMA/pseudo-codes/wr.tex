@@ -1,0 +1,32 @@
+
+\begin{algorithm}[H]
+\caption{WR-Evaluation}
+\begin{algorithmic} 
+\STATE chainLength $\leftarrow$ 0
+\STATE witnessNb $\leftarrow$ 0
+\STATE ratingsList $\leftarrow$ [ ]
+\STATE acquaintances $\leftarrow$ [ ]
+\WHILE{acquaintances.length < nbF}
+\STATE acquaintances $\leftarrow$ likelyAcquaintances
+\ENDWHILE
+\WHILE{witnessNb < nBF and chain < nRL}
+\STATE chain ++
+\FORALL{Provider p in acquaintances}
+\STATE acquaintances.remove(self)
+\IF {matchingRatingsFound}
+\STATE ratingsList $\leftarrow$ ratingList $\cup$ ratings
+\STATE witnessNb ++
+\ELSE
+\STATE acquaintances $\leftarrow$ acquaintances $\cup$ listOFnewAcquaintances
+\ENDIF
+\ENDFOR
+\ENDWHILE
+
+\STATE RW $\leftarrow$ ratingsList
+\STATE TV $\leftarrow$ getTrustValue (WR)
+	
+\end{algorithmic}
+\end{algorithm}
+
+
+

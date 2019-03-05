@@ -1,0 +1,16 @@
+\begin{algorithm}[H]
+\caption{get IT reliability}
+\begin{algorithmic} 
+\STATE pd $\leftarrow$ 0
+\STATE weightSum $\leftarrow$ 0
+\FORALL{r in R(a,b,c)}
+\STATE weight $\leftarrow$ $\frac{\exp{ (-1*this.tick-r[i]) }}{\lambda}$
+\STATE weightSum $\leftarrow$ weightSum + weight
+\STATE pd $\leftarrow$ pd + weight * |r[v] - TI|
+\ENDFOR
+\STATE pd $\leftarrow$ 1 - $\frac{pd}{2 * weightSum}$
+\STATE pr $\leftarrow$ 1 - $\exp{-1 * gamma * weightSum}$
+\RETURN pd * pr
+\end{algorithmic}
+\end{algorithm}
+	

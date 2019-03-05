@@ -1,0 +1,18 @@
+
+\begin{algorithm}[H]
+\caption{Select Best Provider}
+\begin{algorithmic}
+
+\STATE bestV $\leftarrow$ Integer.MIN
+\STATE bestP $\leftarrow$ None
+\FORALL{p in hasTrustValue}
+\STATE trustValue $\leftarrow$ getITTrustValue(p)
+\IF{trustValue> bestV}
+\STATE bestV $\leftarrow$ trustValue
+\STATE bestP $\leftarrow$ p
+\ENDIF
+\ENDFOR
+
+\RETURN bestP
+\end{algorithmic} 
+\end{algorithm}

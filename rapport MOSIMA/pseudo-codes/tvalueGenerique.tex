@@ -1,0 +1,19 @@
+
+\begin{algorithm}[H]
+\caption{get Trust Value}
+\begin{algorithmic} 
+\STATE t-value $\leftarrow$ 0
+\STATE weightSum $\leftarrow$ 0
+\STATE r-ab $\leftarrow$ $\empty$
+\FORALL{k in every components of t-model}
+    \STATE r-ab $\leftarrow$ get-rates-for b from component k
+    \STATE tk $\leftarrow$ get-t-value-by-component r-ab
+    \STATE reliability $\leftarrow$ get-reliability for component k
+    \STATE w $\leftarrow$ get-component's coefficient * reliability
+    \STATE t-value $\leftarrow$ t-value + component's weight * tk
+    \STATE weight-sum $\leftarrow$ weight-sum + w
+\ENDFOR
+\STATE t-value $\leftarrow$ t-value / weight-sum
+\RETURN t-value
+\end{algorithmic}
+\end{algorithm}

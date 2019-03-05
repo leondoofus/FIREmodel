@@ -1,0 +1,59 @@
+\subsection{Question 2.1.1}
+
+\subsubsection{Structures}
+Dans cette partie, nous détaillons les différentes principales structures de notre programme.
+\label{sec:structures} 
+\begin{itemize}
+    \item \texttt{Rate} définit une note donnée. Elle est représentée sous la forme d'une liste telle que [a,b,i,v] où a est l'id du consommateur, b celui du fournisseur, i le temps d'enregistrement (tick) et v est la valeur de la note. Nous avons décidé de supprimer le terme c car il n'intervenait pas dans les calculs.
+    \item \texttt{Consommateur}. L'agent consommateur possède les attributs suivants : un identifiant unique (automatique en NetLogo), un rayon d'opération (déterminé pour obtenir un voisinage spécifique), un niveau d'activité (aléatoire dans l'intervalle précisé dans l'article), une liste de \textit{Rates}, un modèle de confiance (parmi NoTrust, IT, ITWR, ITCR et ITWRCR) et deux listes hasTrustValue et noTrustValue. Ces deux listes permettent, à chaque tick, de trier les fournisseurs "connus" et inconnus. 
+
+    \item \texttt{ProviderAgent}. L'agent fournisseur, quant à lui, possède également un identifiant et un rayon d'opération, mais aussi un type, un niveau de performance qui en découle. Le rayon d'opération, quelque soit le type d'agent, est déterminé arbitrairement. Ce choix est donc détaillé dans la partie \hyperref[sec:hypotheses]{Hypothèses}.
+    
+    \item \texttt{providerType} est une structure de type énumérations définie telle que : \newline
+	\{\newline \quad good ([PL\_GOOD, PL\_PERFECT], 1.0), \newline \quad ordinary ([PL\_OK, PL\_GOOD], 2.0), \newline \quad bad ([PL\_WORST, PL\_OK], 2.0), \newline \quad intermittent (None, None) \newline	\}
+
+
+\end{itemize}
+
+\subsubsection{Algorithmes}
+L'intégralité des algorithmes implémentés pour simuler le modèle FIRE-IT est présentée et détaillée ci-dessous. 
+\textit{Remarque : À partir de l'algorithme 3, les pseudo-codes correspondent à des algorithmes conçus spécifiquement pour la partie IT seulement. Ils sont donc simplifiés car il s'agissait des bases mais assez complets pour la gestion du composant IT. Les méthodes ont été généralisées par la suite. Elles seront donc décrites dans les sections suivantes.}
+\newline
+Tous les agents dans cette environnement sont placés de manière aléatoire sur la surface de la sphère selon la distribution normale. Chaque agent possède des coordonnées cartésiennes satisfaisant l'équation de la sphère :
+
+\[ x^2 + y^2 + z^2 = R^2 \]
+
+\textit{R} étant le rayon fixé de la sphère et le centre est placé à l'origine O (0, 0, 0).
+En partant de ces positions aléatoires, nous initialisons les agents de la manière suivante :
+\input{pseudo-codes/init.tex}
+
+Avec \texttt{setPerformances} étant l'attribution aléatoire pour chaque fournisseur d'un niveau de performance correspondant à son type. Le tirage aléatoire s'effectue dans un intervalle particulier. En effet, chaque type de fournisseur correspond à un intervalle de performance (sauf pour les intermittents) et à une déviation (\hyperref[sec:structures]{Voir structures}). Les fournisseurs de type intermittents représentent une exception. Leur niveau de performance n'est pas réglé à l'initialisation mais sera généré aléatoirement lors des interactions.
+
+Ensuite, la boucle principale est lancée (appelé à chaque \texttt{tick}). 
+\input{pseudo-codes/go.tex} 
+Les processus de sélection et l'interaction sont décrits ci-dessous tandis que les fonctions de dynamisme (random-move, random-setup et switch-behaviours) sont détaillées en fin de section.
+
+\input{pseudo-codes/selectProviderIT.tex}
+La valeur initiale de T (la température déterminant le biais du choix entre les deux actions - dilemme de Boltzmann) ainsi que sa fonction de décroissance a été déterminée arbitrairement. L'opération initiale consistait à diviser T par une valeur à chaque sélection mais cela sera modifié ensuite (voir \hyperref[sec:temperature]{partie Hypothèses}). 
+
+Parmi les fournisseurs de la liste \textit{hasTrustValue}, on tire le meilleur selon l'algorithme \textit{selectBestProvider}.
+\input{pseudo-codes/selectBestProvider.tex}
+
+Les "valeurs de confiances" (trust values) et la fiabilité de celles-ci (reliability) sont déterminées, pour le moment, comme ceci :
+\input{pseudo-codes/tvalueIT.tex}
+\input{pseudo-codes/reliability.tex}
+Il faut noter que la fiabilité ne sera pas utilisée pour cette partie car IT est la seule composante présente.
+
+Une fois le fournisseur choisi, l'interaction se déroule :
+\input{pseudo-codes/interact-with.tex}
+L'UG est tirée suivant une distribution normale dont la moyenne est le niveau de performance de l'agent et l'écart-type correspondant à son type.
+Dans le cas où le consommateur se trouverait hors du rayon d'opération du fournisseur, l'article nous décrit que l'UG décroît linéairement en fonction de ce facteur. Toutefois, il n'y a pas plus de précisions à ce sujet. Il a donc fallu émettre quelques hypothèses que l'on décrit dans la \hyperref[sec:hypotheses]{partie 8}.
+
+À la fin de chaque tour, les bases de données locales (listes de notes stockées) sont mises à jour afin de ne garder que les H notes les plus récentes :
+\input{pseudo-codes/deleteOldRatings.tex}
+
+Enfin, toutes les méthodes (\texttt{algo 4-6}) représentant le dynamisme du monde (et donc qui permettent de simuler les effets d'un système multi-agents ouvert), ont également été implémentées. Aucune d'entre elles n'intervient dans le cadre de ce projet mais il est possible de les activer séparément grâce aux switchs présents sur l'interface. (dynamism-move pour les déplacements des agents, dynamism-behaviours pour les changement de comportement des fournisseurs et dynamism-setup pour les entrées-sorties d'agents)
+\input{pseudo-codes/dynamism/randomMove.tex}
+L'article décrit qu'un agent peut se déplacer en ajoutant à $\theta$ et à $\phi$ un angle appartenant à [-$\frac{\pi}{20}$,$\frac{\pi}{20}$]. Or, en Netlogo, un agent est décrit par ses coordonnées cartésiennes. Il nous faut donc passer par les coordonnées polaires pour réaliser les changements de locations. Ces conversions entre coordonnées cartésiennes et polaires sont décrites dans la partie \hyperref[sec:hypotheses]{Hypothèses et Formules}.
+\input{pseudo-codes/dynamism/randomSetup.tex}
+\input{pseudo-codes/dynamism/switchBehaviours.tex}

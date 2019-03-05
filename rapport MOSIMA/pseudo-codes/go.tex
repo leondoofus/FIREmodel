@@ -1,0 +1,25 @@
+
+\begin{algorithm}[H]
+\caption{Main}
+\begin{algorithmic} 
+\FORALL{Consumers}
+\IF{random < activity-level} 
+\STATE provider $\leftarrow$ search-provider
+\STATE interact-with-provider
+\ENDIF
+\ENDFOR
+\FORALL{Providers}
+\STATE switch-behaviours
+\ENDFOR
+\FORALL{Consumers}
+\STATE random-move
+\ENDFOR
+\STATE random-setup
+\STATE delete-old-ratings
+\STATE ticks ++
+\IF{ticks > rounds-number} 
+\STATE STOP
+\ENDIF
+\end{algorithmic}
+\end{algorithm}
+

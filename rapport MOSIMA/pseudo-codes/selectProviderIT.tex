@@ -1,0 +1,45 @@
+
+\begin{algorithm}[H]
+\caption{Search-provider IT}
+\begin{algorithmic} 
+
+\IF {t-model = NoTrust}
+\STATE return get-random-provider
+\ENDIF
+\IF {t-model = IT}
+\STATE search-list $\leftarrow$ nearby-providers
+\FORALL {provider p in search-list}
+\IF {get-rates-for (p) = $\emptyset$}
+\STATE noTrustValue $\leftarrow$ p
+\ELSE
+\STATE hasTrustValue $\leftarrow$ p
+\ENDIF
+\ENDFOR
+\IF{has-trust-value = $\emptyset$}
+\RETURN select random provider
+\ENDIF
+\IF{no-trust-value = $\emptyset$}
+\RETURN select best provider
+\ENDIF
+\STATE bestP $\leftarrow$ select-best-provider ()
+\STATE $ER_{a1}$ $\leftarrow$ getTI (bestP)
+
+\STATE $ER_{a2}$ $\leftarrow$ mean average-performance
+\COMMENT {Average performance is determined considering the types of every provider in HasTrustValue $\cup$ NoTrustValue}
+
+
+\STATE T $\leftarrow$ $\frac{T}{1.5}$
+
+\STATE $p_{a1} \leftarrow \frac{\exp{\frac{ER_{a1}}{T}}}{\exp{\frac{ER_{a1}}{T}}+ \exp{\frac{ER_{a2}}{T}}}$
+
+\IF {(random (0,1 ) < $p_{a1}$}
+\STATE return bestP
+\ELSE
+\STATE return selectRandomProvider()
+\ENDIF
+\ENDIF
+\end{algorithmic}
+\end{algorithm}
+
+
+

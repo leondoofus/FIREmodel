@@ -1,0 +1,13 @@
+\begin{algorithm}[H]
+\caption{Switch behaviours}
+\begin{algorithmic}
+\IF {random < $p_{\mu C}$}
+\STATE $\delta\mu \leftarrow$ random(-M,M)
+\STATE newPerformance $\leftarrow$ oldPerformance + $\delta\mu$
+\ENDIF
+\IF {random < $p_{ProfileSwitch}$}
+\STATE setNewProfile
+\ENDIF
+\end{algorithmic}
+
+\end{algorithm}

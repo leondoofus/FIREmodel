@@ -1,0 +1,13 @@
+Les lignes suivantes seront ajoutées à la fin de l'algorithme interact-with. Le fournisseur choisit la meilleure note parmi celles que le consommateur a enregistré. Il gardera donc toujours une note par interaction avec un consommateur différent mais il peut choisir la meilleure parmi ces interactions.
+\begin{algorithm}[H]
+\caption{Store certified reputation}
+
+\begin{algorithmic}
+\STATE allRatings $\leftarrow$ get-rates-for (provider)
+\STATE bestRate $\leftarrow$ max(allRatings)
+\STATE provider.receivedRatings $\leftarrow$ provider.receivedRatings $\cup$ bestRate
+
+\end{algorithmic}
+\end{algorithm}
+
+Donc \texttt{get-rates(CR, p)} renvoie la liste \texttt{receivedRatings} (de taille H au maximum) du fournisseur p.
